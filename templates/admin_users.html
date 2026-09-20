@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Manage Users - Rudbit</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            color: #222;
+        }
+
+        .topbar {
+            background: #111827;
+            color: white;
+            padding: 18px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .admin-label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .container {
+            width: 94%;
+            max-width: 1200px;
+            margin: 30px auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0;
+        }
+
+        .back {
+            text-decoration: none;
+            background: #e5e7eb;
+            color: #111827;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .search-box {
+            background: white;
+            padding: 18px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            margin-bottom: 20px;
+        }
+
+        .search-box form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+
+        .search-box button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .table-box {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        th,
+        td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background: #f9fafb;
+            font-size: 14px;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .admin {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .user {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .actions {
+            display: flex;
+            gap: 7px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .view-btn,
+        .activate-btn,
+        .deactivate-btn {
+            display: inline-block;
+            text-decoration: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 7px;
+            font-weight: bold;
+            font-size: 13px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .view-btn {
+            background: #2563eb;
+        }
+
+        .activate-btn {
+            background: #16a34a;
+        }
+
+        .deactivate-btn {
+            background: #dc2626;
+        }
+
+        .empty {
+            padding: 30px;
+            text-align: center;
+            color: #777;
+        }
+
+        @media (max-width: 600px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .search-box form {
+                flex-direction: column;
+            }
+
+            .search-box button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="topbar">
+    <div class="brand">Rudbit</div>
+    <div class="admin-label">Administrator Dashboard</div>
+</div>
+
+<div class="container">
+
+    <div class="header">
+        <h1>Manage Users</h1>
+
+        <a class="back" href="{{ url_for('admin_dashboard') }}">
+            ← Admin Dashboard
+        </a>
+    </div>
+
+    <div class="search-box">
+
+        <form method="GET">
+
+            <input
+                type="text"
+                name="search"
+                value="{{ search }}"
+                placeholder="Search by phone number..."
+            >
+
+            <button type="submit">
+                Search
+            </button>
+
+        </form>
+
+    </div>
+
+    <div class="table-box">
+
+        {% if users %}
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Phone</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Balance</th>
+                    <th>Created</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for user in users %}
+
+                <tr>
+
+                    <td>
+                        #{{ user["id"] }}
+                    </td>
+
+                    <td>
+                        {{ user["phone"] }}
+                    </td>
+
+                    <td>
+
+                        {% if user["role"] == "admin" %}
+                            <span class="status admin">Admin</span>
+                        {% else %}
+                            <span class="status user">User</span>
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if user["status"] == "Active" %}
+                            <span class="status active">Active</span>
+                        {% else %}
+                            <span class="status pending">Pending</span>
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        {{ "%.2f"|format(user["balance"] or 0) }}
+                    </td>
+
+                    <td>
+                        {{ user["created_at"] }}
+                    </td>
+
+                    <td>
+
+                        <div class="actions">
+
+                            <a
+                                class="view-btn"
+                                href="{{ url_for(
+                                    'admin_user_details',
+                                    user_id=user['id']
+                                ) }}"
+                            >
+                                View
+                            </a>
+
+                            {% if user["role"] != "admin" %}
+
+                                {% if user["status"] == "Active" %}
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for(
+                                            'admin_update_user_status',
+                                            user_id=user['id']
+                                        ) }}"
+                                        onsubmit="return confirm(
+                                            'Are you sure you want to deactivate this account?'
+                                        );"
+                                    >
+
+                                        <input
+                                            type="hidden"
+                                            name="csrf_token"
+                                            value="{{ csrf_token() }}"
+                                        >
+
+                                        <input
+                                            type="hidden"
+                                            name="status"
+                                            value="Pending"
+                                        >
+
+                                        <button
+                                            type="submit"
+                                            class="deactivate-btn"
+                                        >
+                                            Deactivate
+                                        </button>
+
+                                    </form>
+
+                                {% else %}
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for(
+                                            'admin_update_user_status',
+                                            user_id=user['id']
+                                        ) }}"
+                                        onsubmit="return confirm(
+                                            'Are you sure you want to activate this account?'
+                                        );"
+                                    >
+
+                                        <input
+                                            type="hidden"
+                                            name="csrf_token"
+                                            value="{{ csrf_token() }}"
+                                        >
+
+                                        <input
+                                            type="hidden"
+                                            name="status"
+                                            value="Active"
+                                        >
+
+                                        <button
+                                            type="submit"
+                                            class="activate-btn"
+                                        >
+                                            Activate
+                                        </button>
+
+                                    </form>
+
+                                {% endif %}
+
+                            {% endif %}
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        {% else %}
+
+        <div class="empty">
+            No users found.
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

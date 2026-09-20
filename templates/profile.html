@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Rudbit - Profile</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #f4f7fb;
+            color: #111827;
+            padding-bottom: 95px;
+        }
+
+        .topbar {
+            height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .logo {
+            font-size: 25px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .user-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #2563eb;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 25px 15px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        .page-description {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .profile-header {
+            background: white;
+            border-radius: 20px;
+            padding: 28px 20px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            margin-bottom: 18px;
+        }
+
+        .profile-avatar {
+            width: 75px;
+            height: 75px;
+            margin: 0 auto 14px;
+            border-radius: 50%;
+            background: #2563eb;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            font-weight: bold;
+        }
+
+        .profile-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .profile-phone {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 18px;
+            padding: 22px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            margin-bottom: 18px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eef0f3;
+            gap: 15px;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .info-value {
+            font-size: 14px;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        .status {
+            color: #16a34a;
+        }
+
+        .balance {
+            color: #2563eb;
+        }
+
+        .logout-button {
+            display: block;
+            width: 100%;
+            height: 52px;
+            line-height: 52px;
+            text-align: center;
+            text-decoration: none;
+            background: #ef4444;
+            color: white;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .logout-button:hover {
+            background: #dc2626;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 75px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            color: #6b7280;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .nav-icon {
+            display: block;
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+
+        .nav-item.active {
+            color: #2563eb;
+        }
+
+        @media (max-width: 450px) {
+
+            .page-title {
+                font-size: 25px;
+            }
+
+            .profile-header {
+                padding: 25px 15px;
+            }
+
+            .info-row {
+                align-items: flex-start;
+            }
+
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <header class="topbar">
+
+        <div class="logo">
+            Rudbit
+        </div>
+
+        <div class="user-icon">
+            R
+        </div>
+
+    </header>
+
+
+    <main class="container">
+
+        <h1 class="page-title">
+            My Profile
+        </h1>
+
+        <p class="page-description">
+            View your Rudbit account information and account status.
+        </p>
+
+
+        <section class="profile-header">
+
+            <div class="profile-avatar">
+                R
+            </div>
+
+            <div class="profile-name">
+                Rudbit User
+            </div>
+
+            <div class="profile-phone">
+                {{ user["phone"] }}
+            </div>
+
+        </section>
+
+
+        <section class="info-card">
+
+            <div class="section-title">
+                Account Information
+            </div>
+
+
+            <div class="info-row">
+
+                <div class="info-label">
+                    Phone Number
+                </div>
+
+                <div class="info-value">
+                    {{ user["phone"] }}
+                </div>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <div class="info-label">
+                    Balance
+                </div>
+
+                <div class="info-value balance">
+                    {{ "%.2f"|format(user["balance"]) }}
+                </div>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <div class="info-label">
+                    Account Status
+                </div>
+
+                <div class="info-value status">
+                    ● {{ user["status"] }}
+                </div>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <div class="info-label">
+                    Account ID
+                </div>
+
+                <div class="info-value">
+                    #{{ user["id"] }}
+                </div>
+
+            </div>
+
+
+            <div class="info-row">
+
+                <div class="info-label">
+                    Created
+                </div>
+
+                <div class="info-value">
+                    {{ user["created_at"] }}
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <a
+            href="{{ url_for('logout') }}"
+            class="logout-button"
+        >
+            Logout
+        </a>
+
+    </main>
+
+
+    <nav class="bottom-nav">
+
+        <a
+            href="{{ url_for('dashboard') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">⌂</span>
+            Home
+        </a>
+
+
+        <a
+            href="{{ url_for('save') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">＋</span>
+            Save
+        </a>
+
+
+        <a
+            href="{{ url_for('withdraw') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">↗</span>
+            Withdraw
+        </a>
+
+
+        <a
+            href="{{ url_for('profile') }}"
+            class="nav-item active"
+        >
+            <span class="nav-icon">♙</span>
+            Profile
+        </a>
+
+
+        <a
+            href="{{ url_for('settings') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">⚙</span>
+            Settings
+        </a>
+
+    </nav>
+
+</body>
+</html>

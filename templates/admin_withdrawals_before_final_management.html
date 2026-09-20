@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Withdrawals - Rudbit Admin</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            color: #222;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 1200px;
+            margin: 30px auto;
+        }
+
+        .header {
+            background: white;
+            padding: 22px;
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.06);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin: 0;
+        }
+
+        .filters {
+            background: white;
+            padding: 18px;
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.06);
+            margin-bottom: 20px;
+        }
+
+        .filters a {
+            display: inline-block;
+            text-decoration: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            background: #e9ecef;
+            color: #222;
+            font-weight: bold;
+        }
+
+        .filters a.active {
+            background: #111827;
+            color: white;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.06);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        th,
+        td {
+            padding: 14px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-size: 14px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .completed {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .rejected {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        .actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .actions form {
+            display: inline;
+        }
+
+        button {
+            border: none;
+            padding: 8px 11px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .btn-pending {
+            background: #ffc107;
+            color: #222;
+        }
+
+        .btn-completed {
+            background: #198754;
+            color: white;
+        }
+
+        .btn-rejected {
+            background: #dc3545;
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #777;
+        }
+
+        .back {
+            display: inline-block;
+            margin-top: 20px;
+            text-decoration: none;
+            background: #111827;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 9px;
+            font-weight: bold;
+        }
+
+        .flash {
+            padding: 13px 16px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            background: #d1e7dd;
+            color: #0f5132;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>Withdrawals Management</h1>
+        <p class="subtitle">
+            Review and manage user withdrawal requests.
+        </p>
+    </div>
+
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+
+    <div class="filters">
+
+        <strong>Filter:</strong>
+
+        <a
+            href="{{ url_for('admin_withdrawals') }}"
+            class="{% if not status_filter %}active{% endif %}"
+        >
+            All
+        </a>
+
+        <a
+            href="{{ url_for('admin_withdrawals', status='Pending') }}"
+            class="{% if status_filter == 'Pending' %}active{% endif %}"
+        >
+            Pending
+        </a>
+
+        <a
+            href="{{ url_for('admin_withdrawals', status='Completed') }}"
+            class="{% if status_filter == 'Completed' %}active{% endif %}"
+        >
+            Completed
+        </a>
+
+        <a
+            href="{{ url_for('admin_withdrawals', status='Rejected') }}"
+            class="{% if status_filter == 'Rejected' %}active{% endif %}"
+        >
+            Rejected
+        </a>
+
+    </div>
+
+
+    <div class="table-container">
+
+        {% if withdrawals %}
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Amount</th>
+                    <th>Destination</th>
+                    <th>Status</th>
+                    <th>Reference</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+            {% for withdrawal in withdrawals %}
+
+                <tr>
+
+                    <td>
+    <a
+        href="{{ url_for(
+            'admin_withdrawal_details',
+            transaction_id=withdrawal['id']
+        ) }}"
+        style="
+            font-weight: bold;
+            color: #111827;
+            text-decoration: none;
+        "
+    >
+        #{{ withdrawal["id"] }}
+    </a>
+</td>
+
+                    <td>
+                        {{ withdrawal["phone"] }}
+                    </td>
+
+                    <td>
+                        {{ "%.2f"|format(withdrawal["amount"] or 0) }}
+                    </td>
+
+                    <td>
+                        {{ withdrawal["destination_phone"] or "-" }}
+                    </td>
+
+                    <td>
+
+                        {% if withdrawal["status"] == "Pending" %}
+
+                            <span class="status pending">
+                                Pending
+                            </span>
+
+                        {% elif withdrawal["status"] == "Completed" %}
+
+                            <span class="status completed">
+                                Completed
+                            </span>
+
+                        {% elif withdrawal["status"] == "Rejected" %}
+
+                            <span class="status rejected">
+                                Rejected
+                            </span>
+
+                        {% else %}
+
+                            <span class="status pending">
+                                Pending
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        {{ withdrawal["reference_id"] or "-" }}
+                    </td>
+
+                    <td>
+                        {{ withdrawal["created_at"] }}
+                    </td>
+
+                    <td>
+
+                        <div class="actions">
+
+                            <form
+                                method="POST"
+                                action="{{ url_for(
+                                    'admin_update_withdrawal_status',
+                                    transaction_id=withdrawal['id']
+                                ) }}"
+                            >
+
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{ csrf_token() }}"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="status"
+                                    value="Pending"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="btn-pending"
+                                    {% if withdrawal["status"] != "Pending" %}
+                                        disabled
+                                    {% endif %}
+                                >
+                                    Pending
+                                </button>
+
+                            </form>
+
+
+                            <form
+                                method="POST"
+                                action="{{ url_for(
+                                    'admin_update_withdrawal_status',
+                                    transaction_id=withdrawal['id']
+                                ) }}"
+                            >
+
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{ csrf_token() }}"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="status"
+                                    value="Completed"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="btn-completed"
+                                    {% if withdrawal["status"] != "Pending" %}
+                                        disabled
+                                    {% endif %}
+                                >
+                                    Completed
+                                </button>
+
+                            </form>
+
+
+                            <form
+                                method="POST"
+                                action="{{ url_for(
+                                    'admin_update_withdrawal_status',
+                                    transaction_id=withdrawal['id']
+                                ) }}"
+                            >
+
+                                <input
+                                    type="hidden"
+                                    name="csrf_token"
+                                    value="{{ csrf_token() }}"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="status"
+                                    value="Rejected"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="btn-rejected"
+                                    {% if withdrawal["status"] != "Pending" %}
+                                        disabled
+                                    {% endif %}
+                                >
+                                    Rejected
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        {% else %}
+
+            <div class="empty">
+                No withdrawal requests found.
+            </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <a
+        class="back"
+        href="{{ url_for('admin_dashboard') }}"
+    >
+        ← Back to Admin Dashboard
+    </a>
+
+</div>
+
+</body>
+</html>

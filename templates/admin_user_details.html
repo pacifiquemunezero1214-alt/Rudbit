@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>User Details - Rudbit</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            color: #222;
+        }
+
+        .topbar {
+            background: #111827;
+            color: white;
+            padding: 18px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .admin-label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .container {
+            width: 94%;
+            max-width: 1000px;
+            margin: 30px auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0;
+        }
+
+        .back {
+            text-decoration: none;
+            background: #e5e7eb;
+            color: #111827;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .detail {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .label {
+            color: #6b7280;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        .value {
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        .balance {
+            font-size: 28px;
+            color: #2563eb;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .admin {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .user {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .table-box {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 650px;
+        }
+
+        th,
+        td {
+            padding: 13px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background: #f9fafb;
+            font-size: 14px;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        .save {
+            color: #15803d;
+            font-weight: bold;
+        }
+
+        .withdraw {
+            color: #dc2626;
+            font-weight: bold;
+        }
+
+        .empty {
+            padding: 20px;
+            text-align: center;
+            color: #777;
+        }
+
+        @media (max-width: 650px) {
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .details {
+                grid-template-columns: 1fr;
+            }
+
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="topbar">
+
+    <div class="brand">
+        Rudbit
+    </div>
+
+    <div class="admin-label">
+        Administrator Dashboard
+    </div>
+
+</div>
+
+<div class="container">
+
+    <div class="header">
+
+        <h1>User Details</h1>
+
+        <a
+            class="back"
+            href="{{ url_for('admin_users') }}"
+        >
+            ← Manage Users
+        </a>
+
+    </div>
+
+
+    <div class="card">
+
+        <h2>Account Information</h2>
+
+        <div class="details">
+
+            <div class="detail">
+
+                <div class="label">
+                    User ID
+                </div>
+
+                <div class="value">
+                    #{{ user["id"] }}
+                </div>
+
+            </div>
+
+
+            <div class="detail">
+
+                <div class="label">
+                    Phone Number
+                </div>
+
+                <div class="value">
+                    {{ user["phone"] }}
+                </div>
+
+            </div>
+
+
+            <div class="detail">
+
+                <div class="label">
+                    Role
+                </div>
+
+                <div class="value">
+
+                    {% if user["role"] == "admin" %}
+
+                        <span class="status admin">
+                            Admin
+                        </span>
+
+                    {% else %}
+
+                        <span class="status user">
+                            User
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <div class="detail">
+
+                <div class="label">
+                    Status
+                </div>
+
+                <div class="value">
+
+                    {% if user["status"] == "Active" %}
+
+                        <span class="status active">
+                            Active
+                        </span>
+
+                    {% else %}
+
+                        <span class="status pending">
+                            Pending
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <div class="detail">
+
+                <div class="label">
+                    Current Balance
+                </div>
+
+                <div class="value balance">
+                    {{ "%.2f"|format(user["balance"] or 0) }}
+                </div>
+
+            </div>
+
+
+            <div class="detail">
+
+                <div class="label">
+                    Created At
+                </div>
+
+                <div class="value">
+                    {{ user["created_at"] }}
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <h2>Transaction History</h2>
+
+        <div class="table-box">
+
+            {% if transactions %}
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>ID</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Destination</th>
+                        <th>Date</th>
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for transaction in transactions %}
+
+                    <tr>
+
+                        <td>
+                            #{{ transaction["id"] }}
+                        </td>
+
+                        <td>
+
+                            {% if transaction["transaction_type"] == "Save" %}
+
+                                <span class="save">
+                                    Save
+                                </span>
+
+                            {% else %}
+
+                                <span class="withdraw">
+                                    Withdraw
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ "%.2f"|format(transaction["amount"] or 0) }}
+                        </td>
+
+                        <td>
+                            {{ transaction["destination_phone"] or "-" }}
+                        </td>
+
+                        <td>
+                            {{ transaction["created_at"] }}
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+            {% else %}
+
+                <div class="empty">
+                    No transactions found for this user.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

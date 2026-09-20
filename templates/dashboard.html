@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Rudbit - Home</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #f4f7fb;
+            color: #111827;
+            padding-bottom: 95px;
+        }
+
+        /* TOP BAR */
+
+        .topbar {
+            height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .logo {
+            font-size: 25px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .user-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #2563eb;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* HERO */
+
+        .hero {
+            position: relative;
+            min-height: 330px;
+            margin: 15px;
+            border-radius: 22px;
+            overflow: hidden;
+
+            background:
+                linear-gradient(
+                    rgba(15, 23, 42, 0.58),
+                    rgba(37, 99, 235, 0.60)
+                ),
+                url("https://images.unsplash.com/photo-1559526324-593bc073d938?auto=format&fit=crop&w=1200&q=80");
+
+            background-size: cover;
+            background-position: center;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+        }
+
+        .hero-content {
+            padding: 25px;
+            animation: welcomeAnimation 1.2s ease-out;
+        }
+
+        .hero-content h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .hero-content p {
+            font-size: 15px;
+            line-height: 1.6;
+            opacity: 0.95;
+        }
+
+        @keyframes welcomeAnimation {
+
+            from {
+                opacity: 0;
+                transform: translateY(25px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+        }
+
+        /* BALANCE */
+
+        .balance-card {
+            margin: 0 15px 15px;
+            padding: 22px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+
+        .balance-title {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .balance {
+            font-size: 30px;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .status {
+            margin-top: 12px;
+            font-size: 13px;
+            color: #16a34a;
+        }
+
+        /* RECENT ACTIVITIES */
+
+        .activities-card {
+            margin: 0 15px 20px;
+            padding: 22px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+
+        .activities-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #111827;
+        }
+
+        .activity {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid #eef0f3;
+        }
+
+        .activity:last-child {
+            border-bottom: none;
+        }
+
+        .activity-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .activity-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #eff6ff;
+            color: #2563eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .activity-name {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .activity-date {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 3px;
+        }
+
+        .activity-amount {
+            font-size: 13px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .empty-activity {
+            text-align: center;
+            padding: 20px 5px;
+            color: #9ca3af;
+            font-size: 13px;
+        }
+
+        /* BOTTOM NAVIGATION */
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 75px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.08);
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            color: #2563eb;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .nav-icon {
+            display: block;
+            font-size: 22px;
+            margin-bottom: 4px;
+            color: #2563eb;
+        }
+
+        .nav-item.active {
+            color: #2563eb;
+        }
+
+        /* DESKTOP */
+
+        @media (min-width: 700px) {
+
+            .hero,
+            .balance-card,
+            .activities-card {
+                max-width: 700px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <!-- TOP BAR -->
+
+    <header class="topbar">
+
+        <div class="logo">
+            Rudbit
+        </div>
+
+        <div class="user-icon">
+            R
+        </div>
+
+    </header>
+
+
+    <main>
+
+        <!-- WELCOME -->
+
+        <section class="hero">
+
+            <div class="hero-content">
+
+                <h1>Welcome to Rudbit</h1>
+
+                <p>
+                    Save, manage and track your money
+                    in one simple place.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- BALANCE -->
+
+        <section class="balance-card">
+
+            <div class="balance-title">
+                 Balance
+            </div>
+
+            <div class="balance">
+                {{ "%.2f"|format(user["balance"]) }}
+            </div>
+
+            <div class="status">
+                ● Account {{ user["status"] }}
+            </div>
+
+        </section>
+
+
+        <!-- RECENT ACTIVITIES -->
+
+        <section class="activities-card">
+
+            <div class="activities-title">
+                Recent Activities
+            </div>
+
+            <div class="empty-activity">
+                No recent activities yet.
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- BOTTOM NAVIGATION -->
+
+    <nav class="bottom-nav">
+
+        <a
+            href="{{ url_for('dashboard') }}"
+            class="nav-item active"
+        >
+            <span class="nav-icon">⌂</span>
+            Home
+        </a>
+
+
+        <a
+            href="{{ url_for('save') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">＋</span>
+            Save
+        </a>
+
+
+        <a
+            href="{{ url_for('withdraw') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">↗</span>
+            Withdraw
+        </a>
+
+
+        <a
+            href="{{ url_for('profile') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">♙</span>
+            Profile
+        </a>
+
+
+        <a
+            href="{{ url_for('settings') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">⚙</span>
+            Settings
+        </a>
+
+    </nav>
+
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Save Money - Rudbit</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 420px;
+            background: white;
+            padding: 30px;
+            border-radius: 18px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        .instruction {
+            background: #f1f3f5;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .number {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 20px 0 8px;
+        }
+
+        .name {
+            font-size: 18px;
+            margin-bottom: 25px;
+        }
+
+        a {
+            display: block;
+            text-decoration: none;
+            padding: 14px;
+            border-radius: 10px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .call {
+            background: #198754;
+            color: white;
+        }
+
+        .home {
+            background: #e9ecef;
+            color: #222;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Save Money</h1>
+
+    <div class="instruction">
+        Please use the payment details below.
+    </div>
+
+    <div class="number">
+        0798386664
+    </div>
+
+    <div class="name">
+        Pacifique MUNEZERO
+    </div>
+
+    <a class="call" href="tel:0798386664">
+        📞 Call
+    </a>
+
+    <a class="home" href="{{ url_for('dashboard') }}">
+        ← Back to Home
+    </a>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Rudbit - Login</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #111827, #2563eb);
+            padding: 20px;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            padding: 30px;
+            border-radius: 18px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+        }
+
+        .logo {
+            text-align: center;
+            font-size: 34px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .phone-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        select {
+            width: 95px;
+            padding: 13px 8px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background: white;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #2563eb;
+        }
+
+        .phone-input {
+            flex: 1;
+        }
+
+        .password-box {
+            margin-bottom: 10px;
+        }
+
+        .forgot-password {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .forgot-password a {
+            color: #2563eb;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        /* =========================
+           FLASH MESSAGE BASE STYLE
+           ========================= */
+
+        .message {
+            padding: 11px 12px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            border: 1px solid transparent;
+        }
+
+        /* SUCCESS */
+        .message.success {
+            background: #dcfce7;
+            color: #166534;
+            border-color: #86efac;
+        }
+
+        /* ERROR */
+        .message.error {
+            background: #fee2e2;
+            color: #b91c1c;
+            border-color: #fca5a5;
+        }
+
+        /* INFO */
+        .message.info {
+            background: #dbeafe;
+            color: #1d4ed8;
+            border-color: #93c5fd;
+        }
+
+        /* WARNING */
+        .message.warning {
+            background: #fef3c7;
+            color: #92400e;
+            border-color: #fcd34d;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+
+        .register-link a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="login-box">
+
+    <div class="logo">Rudbit</div>
+
+    <div class="subtitle">
+        Login to your account
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="message {{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" autocomplete="off">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <label>Phone Number</label>
+
+        <div class="phone-row">
+
+            <select
+                name="country_code"
+                autocomplete="off"
+                required
+            >
+                <option value="+250">+250</option>
+                <option value="+256">+256</option>
+                <option value="+255">+255</option>
+                <option value="+254">+254</option>
+            </select>
+
+            <input
+                class="phone-input"
+                type="tel"
+                name="phone"
+                placeholder="Enter phone number"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                required
+            >
+
+        </div>
+
+        <div class="password-box">
+
+            <label>Password</label>
+
+            <input
+                type="password"
+                name="password"
+                placeholder="Enter your password"
+                autocomplete="new-password"
+                required
+            >
+
+        </div>
+
+        <div class="forgot-password">
+            <a href="{{ url_for('forgot_password') }}">
+                Forgot Password?
+            </a>
+        </div>
+
+        <button type="submit">
+            Login
+        </button>
+
+    </form>
+
+    <div class="register-link">
+        Don't have an account?
+        <a href="{{ url_for('register') }}">Create Account</a>
+    </div>
+
+</div>
+
+</body>
+</html>

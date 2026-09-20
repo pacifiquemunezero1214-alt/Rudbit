@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Rudbit - Settings</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #f4f7fb;
+            color: #111827;
+            padding-bottom: 95px;
+        }
+
+        /* TOP BAR */
+
+        .topbar {
+            height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .logo {
+            font-size: 25px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .user-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #2563eb;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* CONTAINER */
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 25px 15px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        .page-description {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        /* SETTINGS CARD */
+
+        .settings-card {
+            background: white;
+            border-radius: 18px;
+            padding: 8px 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 18px 0;
+            border-bottom: 1px solid #eef0f3;
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .setting-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: #eff6ff;
+            color: #2563eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .setting-name {
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .setting-description {
+            margin-top: 4px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .arrow {
+            font-size: 20px;
+            color: #9ca3af;
+        }
+
+        .logout {
+            color: #ef4444;
+        }
+
+        .logout .setting-icon {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+
+        /* BOTTOM NAVIGATION */
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 75px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            color: #6b7280;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .nav-icon {
+            display: block;
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+
+        .nav-item.active {
+            color: #2563eb;
+        }
+
+        /* MOBILE */
+
+        @media (max-width: 450px) {
+
+            .page-title {
+                font-size: 25px;
+            }
+
+            .container {
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+
+            .settings-card {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <!-- TOP BAR -->
+
+    <header class="topbar">
+
+        <div class="logo">
+            Rudbit
+        </div>
+
+        <div class="user-icon">
+            R
+        </div>
+
+    </header>
+
+
+    <!-- MAIN CONTENT -->
+
+    <main class="container">
+
+        <h1 class="page-title">
+            Settings
+        </h1>
+
+        <p class="page-description">
+            Manage your Rudbit account and preferences.
+        </p>
+
+
+        <!-- SETTINGS -->
+
+        <section class="settings-card">
+
+
+            <!-- CHANGE PASSWORD -->
+
+            <a
+                href="{{ url_for('change_password') }}"
+                class="setting-item"
+                style="text-decoration: none; color: inherit;"
+            >
+
+                <div class="setting-left">
+
+                    <div class="setting-icon">
+                        🔐
+                    </div>
+
+                    <div>
+
+                        <div class="setting-name">
+                            Change Password
+                        </div>
+
+                        <div class="setting-description">
+                            Update your account password
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="arrow">
+                    ›
+                </div>
+
+            </a>
+
+
+            <!-- PHONE NUMBER -->
+
+            <div class="setting-item">
+
+                <div class="setting-left">
+
+                    <div class="setting-icon">
+                        📱
+                    </div>
+
+                    <div>
+
+                        <div class="setting-name">
+                            Phone Number
+                        </div>
+
+                        <div class="setting-description">
+                            {{ user["phone"] }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ACCOUNT -->
+
+            <a
+                href="{{ url_for('profile') }}"
+                class="setting-item"
+                style="text-decoration: none; color: inherit;"
+            >
+
+                <div class="setting-left">
+
+                    <div class="setting-icon">
+                        👤
+                    </div>
+
+                    <div>
+
+                        <div class="setting-name">
+                            Account
+                        </div>
+
+                        <div class="setting-description">
+                            View your account information
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="arrow">
+                    ›
+                </div>
+
+            </a>
+
+
+            <!-- LOGOUT -->
+
+            <a
+                href="{{ url_for('logout') }}"
+                class="setting-item logout"
+                style="text-decoration: none;"
+            >
+
+                <div class="setting-left">
+
+                    <div class="setting-icon">
+                        ↪
+                    </div>
+
+                    <div>
+
+                        <div class="setting-name">
+                            Logout
+                        </div>
+
+                        <div class="setting-description">
+                            Sign out of your Rudbit account
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="arrow logout">
+                    ›
+                </div>
+
+            </a>
+
+
+        </section>
+
+    </main>
+
+
+    <!-- BOTTOM NAVIGATION -->
+
+    <nav class="bottom-nav">
+
+        <a
+            href="{{ url_for('dashboard') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">⌂</span>
+            Home
+        </a>
+
+
+        <a
+            href="{{ url_for('save') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">＋</span>
+            Save
+        </a>
+
+
+        <a
+            href="{{ url_for('withdraw') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">↗</span>
+            Withdraw
+        </a>
+
+
+        <a
+            href="{{ url_for('profile') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">♙</span>
+            Profile
+        </a>
+
+
+        <a
+            href="{{ url_for('settings') }}"
+            class="nav-item active"
+        >
+            <span class="nav-icon">⚙</span>
+            Settings
+        </a>
+
+    </nav>
+
+</body>
+</html>

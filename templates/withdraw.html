@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Rudbit - Withdraw</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #f4f7fb;
+            color: #111827;
+            padding-bottom: 95px;
+        }
+
+        .topbar {
+            height: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .logo {
+            font-size: 25px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .user-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #2563eb;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px 15px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .page-description {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            margin-bottom: 18px;
+            padding: 13px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .success {
+            background: #ecfdf5;
+            color: #15803d;
+        }
+
+        .error {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .balance-card {
+            background: white;
+            border-radius: 18px;
+            padding: 22px;
+            margin-bottom: 18px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .balance-title {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .balance {
+            font-size: 30px;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .withdraw-card {
+            background: white;
+            border-radius: 18px;
+            padding: 22px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .withdraw-card h2 {
+            font-size: 19px;
+            margin-bottom: 8px;
+        }
+
+        .withdraw-card p {
+            font-size: 13px;
+            color: #6b7280;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .input-field {
+            width: 100%;
+            height: 52px;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            padding: 0 15px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .input-field:focus {
+            border-color: #2563eb;
+        }
+
+        .withdraw-button {
+            width: 100%;
+            height: 52px;
+            margin-top: 4px;
+            border: none;
+            border-radius: 12px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .withdraw-button:hover {
+            background: #1d4ed8;
+        }
+
+        .info-box {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: #2563eb;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .activities-card {
+            margin-top: 18px;
+            background: white;
+            border-radius: 18px;
+            padding: 22px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .activities-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .activity {
+            padding: 14px 0;
+            border-bottom: 1px solid #eef0f3;
+        }
+
+        .activity:last-child {
+            border-bottom: none;
+        }
+
+        .activity-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .activity-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .activity-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #eff6ff;
+            color: #2563eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .activity-name {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .activity-date {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 3px;
+        }
+
+        .activity-amount {
+            font-size: 13px;
+            font-weight: bold;
+            color: #dc2626;
+        }
+
+        .destination {
+            margin-left: 50px;
+            margin-top: 5px;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .empty-activity {
+            text-align: center;
+            padding: 15px 5px;
+            color: #9ca3af;
+            font-size: 13px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 75px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            color: #6b7280;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .nav-icon {
+            display: block;
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+
+        .nav-item.active {
+            color: #2563eb;
+        }
+
+        @media (max-width: 450px) {
+
+            .page-title {
+                font-size: 25px;
+            }
+
+            .balance {
+                font-size: 27px;
+            }
+
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="topbar">
+
+        <div class="logo">
+            Rudbit
+        </div>
+
+        <div class="user-icon">
+            R
+        </div>
+
+    </header>
+
+
+    <main class="container">
+
+        <h1 class="page-title">
+            Withdraw Money
+        </h1>
+
+        <p class="page-description">
+            Withdraw money from your Rudbit balance
+            and choose the phone number where it should go.
+        </p>
+
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+
+            {% if messages %}
+
+                {% for category, message in messages %}
+
+                    <div class="message {{ category }}">
+                        {{ message }}
+                    </div>
+
+                {% endfor %}
+
+            {% endif %}
+
+        {% endwith %}
+
+
+        <section class="balance-card">
+
+            <div class="balance-title">
+                Current Balance
+            </div>
+
+            <div class="balance">
+                {{ "%.2f"|format(user["balance"]) }}
+            </div>
+
+        </section>
+
+
+        <section class="withdraw-card">
+
+            <h2>
+                Withdraw Funds
+            </h2>
+
+            <p>
+                Enter the amount and the phone number
+                where you want the money to be sent.
+            </p>
+
+
+            <form
+                action="{{ url_for('withdraw') }}"
+                method="POST"
+                autocomplete="off"
+            >
+
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}"
+                >
+
+                <div class="input-group">
+
+                    <label
+                        class="input-label"
+                        for="amount"
+                    >
+                        Amount
+                    </label>
+
+                    <input
+                        type="number"
+                        id="amount"
+                        name="amount"
+                        class="input-field"
+                        placeholder="Enter amount"
+                        min="1"
+                        step="0.01"
+                        required
+                        autocomplete="off"
+                    >
+
+                </div>
+
+
+                <div class="input-group">
+
+                    <label
+                        class="input-label"
+                        for="destination_phone"
+                    >
+                        Destination Phone Number
+                    </label>
+
+                    <input
+                        type="tel"
+                        id="destination_phone"
+                        name="destination_phone"
+                        class="input-field"
+                        placeholder="Enter phone number"
+                        required
+                        autocomplete="off"
+                    >
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="withdraw-button"
+                >
+                    Withdraw Money
+                </button>
+
+            </form>
+
+
+            <div class="info-box">
+                Make sure the phone number is correct
+                before submitting your withdrawal request.
+            </div>
+
+        </section>
+
+
+        <section class="activities-card">
+
+            <div class="activities-title">
+                Recent Withdrawals
+            </div>
+
+
+            {% if transactions %}
+
+                {% for transaction in transactions %}
+
+                    <div class="activity">
+
+                        <div class="activity-top">
+
+                            <div class="activity-left">
+
+                                <div class="activity-icon">
+                                    ↗
+                                </div>
+
+                                <div>
+
+                                    <div class="activity-name">
+                                        Withdrawal
+                                    </div>
+
+                                    <div class="activity-date">
+                                        {{ transaction["created_at"] }}
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="activity-amount">
+                                -{{ "%.2f"|format(transaction["amount"]) }}
+                            </div>
+
+                        </div>
+
+
+                        <div class="destination">
+                            To: {{ transaction["destination_phone"] }}
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="empty-activity">
+                    No withdrawals yet.
+                </div>
+
+            {% endif %}
+
+        </section>
+
+    </main>
+
+
+    <nav class="bottom-nav">
+
+        <a
+            href="{{ url_for('dashboard') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">⌂</span>
+            Home
+        </a>
+
+        <a
+            href="{{ url_for('save') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">＋</span>
+            Save
+        </a>
+
+        <a
+            href="{{ url_for('withdraw') }}"
+            class="nav-item active"
+        >
+            <span class="nav-icon">↗</span>
+            Withdraw
+        </a>
+
+        <a
+            href="{{ url_for('profile') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">♙</span>
+            Profile
+        </a>
+
+        <a
+            href="{{ url_for('settings') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">⚙</span>
+            Settings
+        </a>
+
+    </nav>
+
+</body>
+</html>
