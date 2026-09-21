@@ -2428,10 +2428,32 @@ def withdraw():
             ""
         ).strip()
 
+        network = request.form.get(
+            'network',
+            ''
+        ).strip().lower()
+
         destination_phone = request.form.get(
-            "destination_phone",
-            ""
+            'destination_phone',
+            ''
         ).strip()
+
+        destination_phone = (
+            destination_phone
+            .replace(' ', '')
+            .replace('-', '')
+        )
+
+        allowed_networks = {"mtn", "airtel"}
+
+        if network not in allowed_networks:
+            flash(
+                "Please select a valid mobile network.",
+                "error"
+            )
+            return redirect(
+                url_for("withdraw")
+            )
 
         try:
             amount = float(amount_text)
@@ -2518,15 +2540,17 @@ def withdraw():
                     transaction_type,
                     amount,
                     destination_phone,
+                    network,
                     status,
                     reference_id
                 )
-                VALUES (%s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (
                 session["user_id"],
                 "Withdraw",
                 amount,
                 destination_phone,
+                network,
                 "Pending",
                 reference_id
             ))
