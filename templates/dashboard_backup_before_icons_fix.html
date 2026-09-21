@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+```
+<title>Rudbit - Home</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+    }
+
+    body {
+        min-height: 100vh;
+        background: #f4f7fb;
+        color: #111827;
+        padding-bottom: 95px;
+    }
+
+    /* TOP BAR */
+
+    .topbar {
+        height: 65px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        background: white;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .logo {
+        font-size: 25px;
+        font-weight: bold;
+        color: #2563eb;
+    }
+
+    .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    /* NOTIFICATION */
+
+    .notification-button {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        border: none;
+        border-radius: 50%;
+        background: #f3f4f6;
+        color: #111827;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 21px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .notification-button:hover {
+        background: #e5e7eb;
+    }
+
+    .notification-badge {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 20px;
+        background: #dc2626;
+        color: white;
+        font-size: 10px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid white;
+    }
+
+    /* USER ICON */
+
+    .user-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: #2563eb;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+
+    /* HERO */
+
+    .hero {
+        position: relative;
+        min-height: 330px;
+        margin: 15px;
+        border-radius: 22px;
+        overflow: hidden;
+
+        background:
+            linear-gradient(
+                rgba(15, 23, 42, 0.58),
+                rgba(37, 99, 235, 0.60)
+            ),
+            url("https://images.unsplash.com/photo-1559526324-593bc073d938?auto=format&fit=crop&w=1200&q=80");
+
+        background-size: cover;
+        background-position: center;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: white;
+    }
+
+    .hero-content {
+        padding: 25px;
+        animation: welcomeAnimation 1.2s ease-out;
+    }
+
+    .hero-content h1 {
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+
+    .hero-content p {
+        font-size: 15px;
+        line-height: 1.6;
+        opacity: 0.95;
+    }
+
+    @keyframes welcomeAnimation {
+
+        from {
+            opacity: 0;
+            transform: translateY(25px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    }
+
+    /* BALANCE */
+
+    .balance-card {
+        margin: 0 15px 15px;
+        padding: 22px;
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
+
+    .balance-title {
+        color: #6b7280;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .balance {
+        font-size: 30px;
+        font-weight: bold;
+        color: #111827;
+    }
+
+    .status {
+        margin-top: 12px;
+        font-size: 13px;
+        color: #16a34a;
+    }
+
+    /* QUICK STATS */
+
+    .stats-grid {
+        margin: 0 15px 15px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
+
+    .stat-title {
+        color: #6b7280;
+        font-size: 13px;
+        margin-bottom: 8px;
+    }
+
+    .stat-value {
+        font-size: 21px;
+        font-weight: bold;
+        color: #111827;
+    }
+
+    .stat-subtitle {
+        margin-top: 5px;
+        font-size: 11px;
+        color: #9ca3af;
+    }
+
+    /* RECENT ACTIVITIES */
+
+    .activities-card {
+        margin: 0 15px 20px;
+        padding: 22px;
+        background: white;
+        border-radius: 18px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
+
+    .activities-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #111827;
+    }
+
+    .activity {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 0;
+        border-bottom: 1px solid #eef0f3;
+    }
+
+    .activity:last-child {
+        border-bottom: none;
+    }
+
+    .activity-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .activity-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: #eff6ff;
+        color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .activity-name {
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .activity-date {
+        font-size: 11px;
+        color: #9ca3af;
+        margin-top: 3px;
+    }
+
+    .activity-amount {
+        font-size: 13px;
+        font-weight: bold;
+        color: #2563eb;
+    }
+
+    .empty-activity {
+        text-align: center;
+        padding: 20px 5px;
+        color: #9ca3af;
+        font-size: 13px;
+    }
+
+    /* BOTTOM NAVIGATION */
+
+    .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        min-height: 75px;
+        background: white;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        z-index: 1000;
+        box-shadow: 0 -5px 20px rgba(0,0,0,0.08);
+        padding: 5px 0;
+    }
+
+    .nav-item {
+        flex: 1;
+        text-align: center;
+        text-decoration: none;
+        color: #2563eb;
+        font-size: 10px;
+        font-weight: bold;
+        min-width: 0;
+    }
+
+    .nav-icon {
+        display: block;
+        font-size: 21px;
+        margin-bottom: 4px;
+        color: #2563eb;
+    }
+
+    .nav-item.active {
+        color: #2563eb;
+    }
+
+    /* DESKTOP */
+
+    @media (min-width: 700px) {
+
+        .hero,
+        .balance-card,
+        .stats-grid,
+        .activities-card {
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+    }
+
+    @media (max-width: 420px) {
+
+        .stats-grid {
+            gap: 10px;
+        }
+
+        .stat-card {
+            padding: 15px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+        }
+
+    }
+
+</style>
+```
+
+</head>
+
+<body>
+
+<!-- TOP BAR -->
+
+<header class="topbar">
+
+```
+<div class="logo">
+    Rudbit
+</div>
+
+<div class="topbar-right">
+
+    <!-- NOTIFICATION BUTTON -->
+
+    <a
+        href="{{ url_for('notifications') }}"
+        class="notification-button"
+        title="Notifications"
+    >
+        ðŸ””
+
+        <span
+            class="notification-badge"
+            id="notificationBadge"
+        >
+            0
+        </span>
+
+    </a>
+
+    <!-- USER ICON -->
+
+    <div class="user-icon">
+        R
+    </div>
+
+</div>
+```
+
+</header>
+
+<main>
+
+```
+<!-- WELCOME -->
+
+<section class="hero">
+
+    <div class="hero-content">
+
+        <h1>Welcome to Rudbit</h1>
+
+        <p>
+            Save, manage and track your money
+            in one simple place.
+        </p>
+
+    </div>
+
+</section>
+
+
+<!-- BALANCE -->
+
+<section class="balance-card">
+
+    <div class="balance-title">
+        Balance
+    </div>
+
+    <div class="balance">
+        {{ "%.2f"|format(user["balance"]) }}
+    </div>
+
+    <div class="status">
+        â— Account {{ user["status"] }}
+    </div>
+
+</section>
+
+
+<!-- QUICK STATS -->
+
+<section class="stats-grid">
+
+    <div class="stat-card">
+
+        <div class="stat-title">
+            Total Saved
+        </div>
+
+        <div class="stat-value">
+            {{ "%.2f"|format(total_saved or 0) }} Frw
+        </div>
+
+        <div class="stat-subtitle">
+            Total completed savings
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-title">
+            Total Earned
+        </div>
+
+        <div class="stat-value">
+            {{ "%.2f"|format(total_earned or 0) }} Frw
+        </div>
+
+        <div class="stat-subtitle">
+            Task rewards earned
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-title">
+            Withdrawn
+        </div>
+
+        <div class="stat-value">
+            {{ "%.2f"|format(total_withdrawn or 0) }} Frw
+        </div>
+
+        <div class="stat-subtitle">
+            Completed withdrawals
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-title">
+            Pending
+        </div>
+
+        <div class="stat-value">
+            {{ "%.2f"|format(pending_withdrawals or 0) }} Frw
+        </div>
+
+        <div class="stat-subtitle">
+            Pending withdrawals
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- RECENT ACTIVITIES -->
+
+<section class="activities-card">
+
+    <div class="activities-title">
+        Recent Activities
+    </div>
+
+    {% if transactions %}
+
+        {% for transaction in transactions %}
+
+            <div class="activity">
+
+                <div class="activity-left">
+
+                    <div class="activity-icon">
+
+                        {% if transaction["transaction_type"] == "Save" %}
+                            +
+                        {% elif transaction["transaction_type"] == "Withdraw" %}
+                            â†—
+                        {% elif transaction["transaction_type"] == "Task Reward" %}
+                            â˜…
+                        {% else %}
+                            â€¢
+                        {% endif %}
+
+                    </div>
+
+                    <div>
+
+                        <div class="activity-name">
+                            {{ transaction["transaction_type"] }}
+                        </div>
+
+                        <div class="activity-date">
+                            {{ transaction["created_at"] }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="activity-amount">
+                    {{ "%.2f"|format(transaction["amount"] or 0) }} Frw
+                </div>
+
+            </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <div class="empty-activity">
+            No recent activities yet.
+        </div>
+
+    {% endif %}
+
+</section>
+```
+
+</main>
+
+<!-- BOTTOM NAVIGATION -->
+
+<nav class="bottom-nav">
+
+```
+<a
+    href="{{ url_for('dashboard') }}"
+    class="nav-item active"
+>
+    <span class="nav-icon">âŒ‚</span>
+    Home
+</a>
+
+
+<a
+    href="{{ url_for('tasks') }}"
+    class="nav-item"
+>
+    <span class="nav-icon">ðŸ“</span>
+    Tasks
+</a>
+
+
+<a
+    href="{{ url_for('save') }}"
+    class="nav-item"
+>
+    <span class="nav-icon">ï¼‹</span>
+    Save
+</a>
+
+
+<a
+    href="{{ url_for('withdraw') }}"
+    class="nav-item"
+>
+    <span class="nav-icon">â†—</span>
+    Withdraw
+</a>
+
+
+<a
+    href="{{ url_for('profile') }}"
+    class="nav-item"
+>
+    <span class="nav-icon">â™™</span>
+    Profile
+</a>
+
+
+<a
+    href="{{ url_for('settings') }}"
+    class="nav-item"
+>
+    <span class="nav-icon">âš™</span>
+    Settings
+</a>
+```
+
+</nav>
+
+<script>
+
+    async function loadNotificationCount() {
+
+        try {
+
+            const response = await fetch(
+                "{{ url_for('notification_api') }}",
+                {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                return;
+            }
+
+            const data = await response.json();
+
+            const badge = document.getElementById(
+                "notificationBadge"
+            );
+
+            if (!badge) {
+                return;
+            }
+
+            const count = Number(
+                data.unread_count || 0
+            );
+
+            badge.textContent = count;
+
+            if (count > 0) {
+                badge.style.display = "flex";
+            } else {
+                badge.style.display = "none";
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Unable to load notification count:",
+                error
+            );
+
+        }
+
+    }
+
+
+    loadNotificationCount();
+
+
+    setInterval(
+        loadNotificationCount,
+        10000
+    );
+
+</script>
+
+</body>
+</html>
+

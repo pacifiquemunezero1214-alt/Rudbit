@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+```
+<title>Task Submissions - Rudbit Admin</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        background: #f5f7fb;
+        color: #222;
+    }
+
+    .topbar {
+        background: #111827;
+        color: white;
+        padding: 18px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .brand {
+        font-size: 22px;
+        font-weight: bold;
+    }
+
+    .admin-label {
+        font-size: 14px;
+        opacity: 0.85;
+    }
+
+    .container {
+        width: 95%;
+        max-width: 1400px;
+        margin: 25px auto;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .header h1 {
+        font-size: 28px;
+        color: #111827;
+    }
+
+    .back-button {
+        text-decoration: none;
+        background: #374151;
+        color: white;
+        padding: 11px 17px;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .back-button:hover {
+        background: #1f2937;
+    }
+
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+    }
+
+    .stat-title {
+        color: #6b7280;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+
+    .stat-value {
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .pending {
+        color: #d97706;
+    }
+
+    .approved {
+        color: #059669;
+    }
+
+    .rejected {
+        color: #dc2626;
+    }
+
+    .filter-box {
+        background: white;
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 20px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+    }
+
+    .filter-title {
+        font-size: 15px;
+        font-weight: bold;
+        margin-bottom: 12px;
+    }
+
+    .filters {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .filter-button {
+        text-decoration: none;
+        padding: 10px 16px;
+        border-radius: 8px;
+        background: #e5e7eb;
+        color: #111827;
+        font-size: 14px;
+    }
+
+    .filter-button:hover {
+        background: #d1d5db;
+    }
+
+    .filter-button.active {
+        background: #111827;
+        color: white;
+    }
+
+    .task-filter {
+        margin-top: 12px;
+        font-size: 14px;
+        color: #6b7280;
+    }
+
+    .task-filter strong {
+        color: #111827;
+    }
+
+    .table-card {
+        background: white;
+        border-radius: 12px;
+        padding: 18px;
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1050px;
+    }
+
+    th,
+    td {
+        padding: 14px 12px;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+        vertical-align: top;
+    }
+
+    th {
+        background: #f9fafb;
+        color: #374151;
+        font-size: 13px;
+        text-transform: uppercase;
+    }
+
+    td {
+        font-size: 14px;
+    }
+
+    .task-title {
+        font-weight: bold;
+        color: #111827;
+        margin-bottom: 4px;
+    }
+
+    .reward {
+        font-weight: bold;
+        color: #059669;
+    }
+
+    .proof-type {
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    .proof-preview {
+        max-width: 260px;
+        max-height: 120px;
+        overflow: hidden;
+        word-break: break-word;
+        color: #374151;
+        line-height: 1.4;
+    }
+
+    .proof-link {
+        color: #2563eb;
+        text-decoration: none;
+        word-break: break-all;
+    }
+
+    .proof-link:hover {
+        text-decoration: underline;
+    }
+
+    .status {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+
+    .status-pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-approved {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .status-rejected {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .review-button {
+        display: inline-block;
+        text-decoration: none;
+        background: #2563eb;
+        color: white;
+        padding: 9px 13px;
+        border-radius: 7px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .review-button:hover {
+        background: #1d4ed8;
+    }
+
+    .empty {
+        text-align: center;
+        padding: 50px 20px;
+        color: #6b7280;
+    }
+
+    .empty-icon {
+        font-size: 40px;
+        margin-bottom: 10px;
+    }
+
+    .mobile-note {
+        display: none;
+        margin-bottom: 12px;
+        color: #6b7280;
+        font-size: 13px;
+    }
+
+    @media (max-width: 800px) {
+        .stats {
+            grid-template-columns: 1fr;
+        }
+
+        .container {
+            width: 92%;
+        }
+
+        .header h1 {
+            font-size: 23px;
+        }
+
+        .mobile-note {
+            display: block;
+        }
+    }
+
+    @media (max-width: 500px) {
+        .topbar {
+            padding: 15px;
+        }
+
+        .brand {
+            font-size: 19px;
+        }
+
+        .admin-label {
+            font-size: 12px;
+        }
+
+        .container {
+            width: 94%;
+            margin-top: 18px;
+        }
+
+        .stat-card {
+            padding: 16px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+        }
+    }
+</style>
+```
+
+</head>
+
+<body>
+
+<header class="topbar">
+    <div class="brand">
+        Rudbit Admin
+    </div>
+
+```
+<div class="admin-label">
+    Task Submissions
+</div>
+```
+
+</header>
+
+<main class="container">
+
+```
+<div class="header">
+    <h1>Task Submissions</h1>
+
+    <a
+        href="{{ url_for('admin_tasks') }}"
+        class="back-button"
+    >
+        ← Back to Tasks
+    </a>
+</div>
+
+<section class="stats">
+
+    <div class="stat-card">
+        <div class="stat-title">
+            Pending
+        </div>
+
+        <div class="stat-value pending">
+            {{ pending_count }}
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-title">
+            Approved
+        </div>
+
+        <div class="stat-value approved">
+            {{ approved_count }}
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-title">
+            Rejected
+        </div>
+
+        <div class="stat-value rejected">
+            {{ rejected_count }}
+        </div>
+    </div>
+
+</section>
+
+<section class="filter-box">
+
+    <div class="filter-title">
+        Filter submissions
+    </div>
+
+    <div class="filters">
+
+        <a
+            href="{{ url_for(
+                'admin_task_submissions',
+                status='Pending',
+                task_id=task_id
+            ) }}"
+            class="filter-button
+            {% if status_filter == 'Pending' %}
+                active
+            {% endif %}"
+        >
+            Pending
+        </a>
+
+        <a
+            href="{{ url_for(
+                'admin_task_submissions',
+                status='Approved',
+                task_id=task_id
+            ) }}"
+            class="filter-button
+            {% if status_filter == 'Approved' %}
+                active
+            {% endif %}"
+        >
+            Approved
+        </a>
+
+        <a
+            href="{{ url_for(
+                'admin_task_submissions',
+                status='Rejected',
+                task_id=task_id
+            ) }}"
+            class="filter-button
+            {% if status_filter == 'Rejected' %}
+                active
+            {% endif %}"
+        >
+            Rejected
+        </a>
+
+        <a
+            href="{{ url_for(
+                'admin_task_submissions',
+                status='Pending'
+            ) }}"
+            class="filter-button"
+        >
+            All Tasks
+        </a>
+
+    </div>
+
+    {% if task_id %}
+        <div class="task-filter">
+            Showing submissions for
+            <strong>Task #{{ task_id }}</strong>
+        </div>
+    {% endif %}
+
+</section>
+
+<section class="table-card">
+
+    <div class="mobile-note">
+        Swipe left/right to view the complete table.
+    </div>
+
+    {% if submissions %}
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Task</th>
+                    <th>User</th>
+                    <th>Reward</th>
+                    <th>Proof Type</th>
+                    <th>Proof</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for submission in submissions %}
+
+                    <tr>
+
+                        <td>
+                            #{{ submission.id }}
+                        </td>
+
+                        <td>
+                            <div class="task-title">
+                                {{ submission.task_title }}
+                            </div>
+
+                            <div class="proof-type">
+                                Task #{{ submission.task_id }}
+                            </div>
+                        </td>
+
+                        <td>
+                            {{ submission.user_phone }}
+                        </td>
+
+                        <td>
+                            <span class="reward">
+                                {{ "{:,.0f}".format(
+                                    submission.task_reward or 0
+                                ) }} Frw
+                            </span>
+                        </td>
+
+                        <td>
+                            {{ submission.proof_type or "Text" }}
+                        </td>
+
+                        <td>
+
+                            <div class="proof-preview">
+
+                                {% if submission.proof %}
+
+                                    {% if submission.proof.startswith(
+                                        "http://"
+                                    ) or submission.proof.startswith(
+                                        "https://"
+                                    ) %}
+
+                                        <a
+                                            href="{{ submission.proof }}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="proof-link"
+                                        >
+                                            Open Proof
+                                        </a>
+
+                                    {% else %}
+
+                                        {{ submission.proof }}
+
+                                    {% endif %}
+
+                                {% else %}
+
+                                    No proof provided.
+
+                                {% endif %}
+
+                            </div>
+
+                        </td>
+
+                        <td>
+
+                            {% if submission.status == "Pending" %}
+
+                                <span
+                                    class="status status-pending"
+                                >
+                                    Pending
+                                </span>
+
+                            {% elif submission.status == "Approved" %}
+
+                                <span
+                                    class="status status-approved"
+                                >
+                                    Approved
+                                </span>
+
+                            {% elif submission.status == "Rejected" %}
+
+                                <span
+                                    class="status status-rejected"
+                                >
+                                    Rejected
+                                </span>
+
+                            {% else %}
+
+                                <span class="status">
+                                    {{ submission.status }}
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+                            {{ submission.submitted_at }}
+                        </td>
+
+                        <td>
+
+                            <a
+                                href="{{ url_for(
+                                    'admin_task_submission_details',
+                                    submission_id=submission.id
+                                ) }}"
+                                class="review-button"
+                            >
+                                {% if submission.status == "Pending" %}
+                                    Review
+                                {% else %}
+                                    View
+                                {% endif %}
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    {% else %}
+
+        <div class="empty">
+
+            <div class="empty-icon">
+                📭
+            </div>
+
+            <h3>
+                No submissions found
+            </h3>
+
+            <p>
+                There are no
+                {{ status_filter|lower }}
+                submissions for this filter.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</section>
+```
+
+</main>
+
+</body>
+</html>

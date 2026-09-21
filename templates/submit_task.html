@@ -1,0 +1,441 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Submit Task - Rudbit</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+            background: #f5f7fb;
+            color: #172033;
+            padding-bottom: 90px;
+        }
+
+        .topbar {
+            background: #ffffff;
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #e7eaf0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .logo {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: #111827;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .brand {
+            font-size: 21px;
+            font-weight: 700;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 650px;
+            margin: 25px auto;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 18px;
+            text-decoration: none;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 22px;
+            box-shadow:
+                0 5px 20px rgba(0, 0, 0, 0.06);
+            margin-bottom: 18px;
+        }
+
+        .task-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .reward {
+            color: #15803d;
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 9px;
+        }
+
+        .help {
+            color: #667085;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 14px;
+        }
+
+        textarea,
+        input {
+            width: 100%;
+            border: 1px solid #d9dee8;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 15px;
+            outline: none;
+            background: #ffffff;
+        }
+
+        textarea {
+            min-height: 170px;
+            resize: vertical;
+            line-height: 1.5;
+        }
+
+        textarea:focus,
+        input:focus {
+            border-color: #4f46e5;
+        }
+
+        .submit-button {
+            width: 100%;
+            border: none;
+            border-radius: 13px;
+            padding: 15px;
+            background: #111827;
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 18px;
+        }
+
+        .submit-button:hover {
+            opacity: 0.92;
+        }
+
+        .info {
+            background: #f8fafc;
+            border-radius: 13px;
+            padding: 15px;
+            margin-top: 15px;
+            line-height: 1.6;
+            color: #475467;
+            font-size: 14px;
+        }
+
+        .flash {
+            padding: 13px 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .flash.error {
+            background: #fef2f2;
+            color: #b42318;
+            border: 1px solid #fecaca;
+        }
+
+        .flash.success {
+            background: #f0fdf4;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 70px;
+            background: #ffffff;
+            border-top: 1px solid #e7eaf0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .bottom-nav a {
+            text-decoration: none;
+            color: #667085;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .bottom-nav a.active {
+            color: #111827;
+            font-weight: 700;
+        }
+
+        .nav-icon {
+            display: block;
+            font-size: 20px;
+            margin-bottom: 3px;
+        }
+
+        @media (max-width: 600px) {
+
+            .container {
+                width: 94%;
+                margin-top: 20px;
+            }
+
+            .card {
+                padding: 18px;
+                border-radius: 16px;
+            }
+
+            .task-title {
+                font-size: 21px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <!-- TOP BAR -->
+
+    <header class="topbar">
+
+        <div class="logo">
+            R
+        </div>
+
+        <div class="brand">
+            Rudbit
+        </div>
+
+    </header>
+
+
+    <!-- MAIN -->
+
+    <main class="container">
+
+        <a
+            href="{{ url_for('task_detail', task_id=task['id']) }}"
+            class="back"
+        >
+            ← Back to Task
+        </a>
+
+
+        <!-- FLASH MESSAGES -->
+
+        {% with messages = get_flashed_messages(
+            with_categories=true
+        ) %}
+
+            {% if messages %}
+
+                {% for category, message in messages %}
+
+                    <div class="flash {{ category }}">
+                        {{ message }}
+                    </div>
+
+                {% endfor %}
+
+            {% endif %}
+
+        {% endwith %}
+
+
+        <!-- TASK INFORMATION -->
+
+        <section class="card">
+
+            <div class="task-title">
+                {{ task['title'] }}
+            </div>
+
+            <div class="reward">
+                Reward:
+                {{ "{:,.0f}".format(task['reward'] or 0) }}
+            </div>
+
+            <div class="info">
+
+                <strong>Proof type:</strong>
+                {{ task['proof_type'] or 'text' }}
+
+                <br>
+
+                <strong>Participants:</strong>
+                {{ task['submission_count'] or 0 }}
+
+                {% if task['max_users'] %}
+                    / {{ task['max_users'] }}
+                {% endif %}
+
+            </div>
+
+        </section>
+
+
+        <!-- SUBMISSION FORM -->
+
+        <section class="card">
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'submit_task',
+                    task_id=task['id']
+                ) }}"
+            >
+
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}"
+                >
+
+
+                <label
+                    class="label"
+                    for="proof"
+                >
+                    Your Proof
+                </label>
+
+
+                {% if task['proof_type'] == 'link' %}
+
+                    <p class="help">
+                        Paste the link that proves you completed
+                        this task.
+                    </p>
+
+                    <input
+                        type="url"
+                        id="proof"
+                        name="proof"
+                        placeholder="https://example.com/..."
+                        required
+                    >
+
+                {% elif task['proof_type'] == 'image' %}
+
+                    <p class="help">
+                        This task requires image proof.
+                        For now, paste the image link or describe
+                        the proof below.
+                    </p>
+
+                    <textarea
+                        id="proof"
+                        name="proof"
+                        placeholder="Paste the image link or enter your proof here..."
+                        required
+                    ></textarea>
+
+                {% else %}
+
+                    <p class="help">
+                        Explain what you completed and provide
+                        any information needed for the admin
+                        to verify your work.
+                    </p>
+
+                    <textarea
+                        id="proof"
+                        name="proof"
+                        placeholder="Enter your proof here..."
+                        required
+                    ></textarea>
+
+                {% endif %}
+
+
+                <button
+                    type="submit"
+                    class="submit-button"
+                >
+                    Submit Task
+                </button>
+
+            </form>
+
+        </section>
+
+    </main>
+
+
+    <!-- BOTTOM NAVIGATION -->
+
+    <nav class="bottom-nav">
+
+        <a href="{{ url_for('dashboard') }}">
+            <span class="nav-icon">⌂</span>
+            Home
+        </a>
+
+        <a
+            href="{{ url_for('tasks') }}"
+            class="active"
+        >
+            <span class="nav-icon">✓</span>
+            Tasks
+        </a>
+
+        <a href="{{ url_for('save') }}">
+            <span class="nav-icon">＋</span>
+            Save
+        </a>
+
+        <a href="{{ url_for('withdraw') }}">
+            <span class="nav-icon">↗</span>
+            Withdraw
+        </a>
+
+        <a href="{{ url_for('profile') }}">
+            <span class="nav-icon">◯</span>
+            Profile
+        </a>
+
+    </nav>
+
+</body>
+</html>
+```

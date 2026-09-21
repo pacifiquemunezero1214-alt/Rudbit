@@ -1,4 +1,4 @@
-﻿from flask import (
+from flask import (
     Flask,
     render_template,
     request,
@@ -1470,53 +1470,53 @@ def dashboard():
         total_saved = conn.execute("""
             SELECT COALESCE(
                 SUM(amount), 0
-            ) AS total_saved
+            )
             FROM transactions
             WHERE user_id = %s
               AND transaction_type = 'Save'
               AND status = 'Completed'
         """, (
             session["user_id"],
-        )).fetchone()["total_saved"]
+        )).fetchone()[0]
 
         # TOTAL EARNED FROM TASKS
         total_earned = conn.execute("""
             SELECT COALESCE(
                 SUM(amount), 0
-            ) AS total_earned
+            )
             FROM transactions
             WHERE user_id = %s
               AND transaction_type = 'Task Reward'
               AND status = 'Completed'
         """, (
             session["user_id"],
-        )).fetchone()["total_earned"]
+        )).fetchone()[0]
 
         # TOTAL WITHDRAWN
         total_withdrawn = conn.execute("""
             SELECT COALESCE(
                 SUM(amount), 0
-            ) AS total_withdrawn
+            )
             FROM transactions
             WHERE user_id = %s
               AND transaction_type = 'Withdraw'
               AND status = 'Completed'
         """, (
             session["user_id"],
-        )).fetchone()["total_withdrawn"]
+        )).fetchone()[0]
 
         # PENDING WITHDRAWALS
         pending_withdrawals = conn.execute("""
             SELECT COALESCE(
                 SUM(amount), 0
-            ) AS pending_withdrawals
+            )
             FROM transactions
             WHERE user_id = %s
               AND transaction_type = 'Withdraw'
               AND status = 'Pending'
         """, (
             session["user_id"],
-        )).fetchone()["pending_withdrawals"]
+        )).fetchone()[0]
 
     finally:
         conn.close()
@@ -1530,6 +1530,10 @@ def dashboard():
         total_withdrawn=total_withdrawn,
         pending_withdrawals=pending_withdrawals
     )
+
+# =====================================================
+# USER NOTIFICATIONS
+# =====================================================
 
 @app.route("/notifications")
 def notifications():
@@ -4322,5 +4326,3 @@ if __name__ == "__main__":
         host="127.0.0.1",
         port=5000
     )
-
-

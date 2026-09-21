@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>Rudbit - Home</title>
 
     <style>
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -38,6 +41,108 @@
             font-weight: bold;
             color: #2563eb;
         }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* WELCOME MESSAGE */
+
+        .welcome-message {
+            position: fixed;
+            top: 82px;
+            left: 18px;
+            z-index: 900;
+
+            background: white;
+            color: #111827;
+
+            padding: 11px 17px;
+            border-radius: 12px;
+
+            font-size: 14px;
+            font-weight: bold;
+
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+
+            opacity: 0;
+            transform: translateX(-25px);
+
+            animation: welcomeMessageAnimation 8s ease-in-out infinite;
+        }
+
+        @keyframes welcomeMessageAnimation {
+
+            0% {
+                opacity: 0;
+                transform: translateX(-25px);
+            }
+
+            12% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+
+            65% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+
+            82% {
+                opacity: 0;
+                transform: translateX(-25px);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateX(-25px);
+            }
+
+        }
+
+        /* NOTIFICATION */
+
+        .notification-button {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: #f3f4f6;
+            color: #111827;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .notification-button:hover {
+            background: #e5e7eb;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 20px;
+            background: #dc2626;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+        }
+
+        /* USER ICON */
 
         .user-icon {
             width: 38px;
@@ -114,7 +219,7 @@
             padding: 22px;
             background: white;
             border-radius: 18px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
         }
 
         .balance-title {
@@ -135,6 +240,40 @@
             color: #16a34a;
         }
 
+        /* QUICK STATS */
+
+        .stats-grid {
+            margin: 0 15px 15px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 18px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-title {
+            color: #6b7280;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 21px;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .stat-subtitle {
+            margin-top: 5px;
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
         /* RECENT ACTIVITIES */
 
         .activities-card {
@@ -142,7 +281,7 @@
             padding: 22px;
             background: white;
             border-radius: 18px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
         }
 
         .activities-title {
@@ -214,14 +353,15 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 75px;
+            min-height: 75px;
             background: white;
             border-top: 1px solid #e5e7eb;
             display: flex;
             justify-content: space-around;
             align-items: center;
             z-index: 1000;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.08);
+            padding: 5px 0;
         }
 
         .nav-item {
@@ -229,13 +369,14 @@
             text-align: center;
             text-decoration: none;
             color: #2563eb;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
+            min-width: 0;
         }
 
         .nav-icon {
             display: block;
-            font-size: 22px;
+            font-size: 21px;
             margin-bottom: 4px;
             color: #2563eb;
         }
@@ -250,6 +391,7 @@
 
             .hero,
             .balance-card,
+            .stats-grid,
             .activities-card {
                 max-width: 700px;
                 margin-left: auto;
@@ -258,7 +400,31 @@
 
         }
 
+        @media (max-width: 420px) {
+
+            .stats-grid {
+                gap: 10px;
+            }
+
+            .stat-card {
+                padding: 15px;
+            }
+
+            .stat-value {
+                font-size: 18px;
+            }
+
+            .welcome-message {
+                top: 78px;
+                left: 12px;
+                font-size: 13px;
+                padding: 10px 14px;
+            }
+
+        }
+
     </style>
+
 </head>
 
 <body>
@@ -271,11 +437,45 @@
             Rudbit
         </div>
 
-        <div class="user-icon">
-            R
+        <div class="topbar-right">
+
+            <!-- NOTIFICATION BUTTON -->
+
+            <a
+                href="{{ url_for('notifications') }}"
+                class="notification-button"
+                title="Notifications"
+            >
+
+                &#128276;
+
+                <span
+                    class="notification-badge"
+                    id="notificationBadge"
+                >
+                    0
+                </span>
+
+            </a>
+
+            <!-- USER ICON -->
+
+            <div class="user-icon">
+                R
+            </div>
+
         </div>
 
     </header>
+
+
+    <!-- ANIMATED WELCOME MESSAGE -->
+
+    <div class="welcome-message">
+
+        Welcome, {{ user["username"] }}! 👋
+
+    </div>
 
 
     <main>
@@ -286,7 +486,9 @@
 
             <div class="hero-content">
 
-                <h1>Welcome to Rudbit</h1>
+                <h1>
+                    Welcome to Rudbit
+                </h1>
 
                 <p>
                     Save, manage and track your money
@@ -303,15 +505,89 @@
         <section class="balance-card">
 
             <div class="balance-title">
-                 Balance
+                Balance
             </div>
 
             <div class="balance">
-                {{ "%.2f"|format(user["balance"]) }}
+                {{ "%.2f"|format(user["balance"] or 0) }}
             </div>
 
             <div class="status">
-                ● Account {{ user["status"] }}
+                &#9679; Account {{ user["status"] }}
+            </div>
+
+        </section>
+
+
+        <!-- QUICK STATS -->
+
+        <section class="stats-grid">
+
+            <div class="stat-card">
+
+                <div class="stat-title">
+                    Total Saved
+                </div>
+
+                <div class="stat-value">
+                    {{ "%.2f"|format(total_saved or 0) }} Frw
+                </div>
+
+                <div class="stat-subtitle">
+                    Total completed savings
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-title">
+                    Total Earned
+                </div>
+
+                <div class="stat-value">
+                    {{ "%.2f"|format(total_earned or 0) }} Frw
+                </div>
+
+                <div class="stat-subtitle">
+                    Task rewards earned
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-title">
+                    Withdrawn
+                </div>
+
+                <div class="stat-value">
+                    {{ "%.2f"|format(total_withdrawn or 0) }} Frw
+                </div>
+
+                <div class="stat-subtitle">
+                    Completed withdrawals
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-title">
+                    Pending
+                </div>
+
+                <div class="stat-value">
+                    {{ "%.2f"|format(pending_withdrawals or 0) }} Frw
+                </div>
+
+                <div class="stat-subtitle">
+                    Pending withdrawals
+                </div>
+
             </div>
 
         </section>
@@ -325,9 +601,69 @@
                 Recent Activities
             </div>
 
-            <div class="empty-activity">
-                No recent activities yet.
-            </div>
+
+            {% if transactions %}
+
+                {% for transaction in transactions %}
+
+                    <div class="activity">
+
+                        <div class="activity-left">
+
+                            <div class="activity-icon">
+
+                                {% if transaction["transaction_type"] == "Save" %}
+
+                                    +
+
+                                {% elif transaction["transaction_type"] == "Withdraw" %}
+
+                                    &#8599;
+
+                                {% elif transaction["transaction_type"] == "Task Reward" %}
+
+                                    &#9733;
+
+                                {% else %}
+
+                                    &bull;
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <div>
+
+                                <div class="activity-name">
+                                    {{ transaction["transaction_type"] }}
+                                </div>
+
+                                <div class="activity-date">
+                                    {{ transaction["created_at"] }}
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="activity-amount">
+                            {{ "%.2f"|format(transaction["amount"] or 0) }} Frw
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+
+            {% else %}
+
+                <div class="empty-activity">
+                    No recent activities yet.
+                </div>
+
+            {% endif %}
 
         </section>
 
@@ -338,12 +674,32 @@
 
     <nav class="bottom-nav">
 
+
         <a
             href="{{ url_for('dashboard') }}"
             class="nav-item active"
         >
-            <span class="nav-icon">⌂</span>
+
+            <span class="nav-icon">
+                &#8962;
+            </span>
+
             Home
+
+        </a>
+
+
+        <a
+            href="{{ url_for('tasks') }}"
+            class="nav-item"
+        >
+
+            <span class="nav-icon">
+                &#128221;
+            </span>
+
+            Tasks
+
         </a>
 
 
@@ -351,8 +707,13 @@
             href="{{ url_for('save') }}"
             class="nav-item"
         >
-            <span class="nav-icon">＋</span>
+
+            <span class="nav-icon">
+                +
+            </span>
+
             Save
+
         </a>
 
 
@@ -360,8 +721,13 @@
             href="{{ url_for('withdraw') }}"
             class="nav-item"
         >
-            <span class="nav-icon">↗</span>
+
+            <span class="nav-icon">
+                &#8599;
+            </span>
+
             Withdraw
+
         </a>
 
 
@@ -369,8 +735,13 @@
             href="{{ url_for('profile') }}"
             class="nav-item"
         >
-            <span class="nav-icon">♙</span>
+
+            <span class="nav-icon">
+                &#9825;
+            </span>
+
             Profile
+
         </a>
 
 
@@ -378,11 +749,95 @@
             href="{{ url_for('settings') }}"
             class="nav-item"
         >
-            <span class="nav-icon">⚙</span>
+
+            <span class="nav-icon">
+                &#9881;
+            </span>
+
             Settings
+
         </a>
+
 
     </nav>
 
+
+    <script>
+
+        async function loadNotificationCount() {
+
+            try {
+
+                const response = await fetch(
+                    "{{ url_for('notification_api') }}",
+                    {
+                        method: "GET",
+                        headers: {
+                            "Accept": "application/json"
+                        }
+                    }
+                );
+
+
+                if (!response.ok) {
+                    return;
+                }
+
+
+                const data = await response.json();
+
+
+                const badge = document.getElementById(
+                    "notificationBadge"
+                );
+
+
+                if (!badge) {
+                    return;
+                }
+
+
+                const count = Number(
+                    data.unread_count || 0
+                );
+
+
+                badge.textContent = count;
+
+
+                if (count > 0) {
+
+                    badge.style.display = "flex";
+
+                } else {
+
+                    badge.style.display = "none";
+
+                }
+
+
+            } catch (error) {
+
+                console.error(
+                    "Unable to load notification count:",
+                    error
+                );
+
+            }
+
+        }
+
+
+        loadNotificationCount();
+
+
+        setInterval(
+            loadNotificationCount,
+            10000
+        );
+
+    </script>
+
 </body>
+
 </html>

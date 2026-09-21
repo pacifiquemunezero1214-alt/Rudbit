@@ -1,436 +1,449 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Admin Dashboard - Rudbit</title>
+```
+<title>Admin Dashboard - Rudbit</title>
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+<style>
+    * {
+        box-sizing: border-box;
+    }
 
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6f9;
-            color: #222;
-        }
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f4f6f9;
+        color: #222;
+    }
+
+    .topbar {
+        background: #111827;
+        color: white;
+        padding: 18px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .brand {
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    .admin-label {
+        font-size: 13px;
+        color: #d1d5db;
+        margin-top: 4px;
+    }
+
+    .logout {
+        background: #dc3545;
+        color: white;
+        text-decoration: none;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-weight: bold;
+    }
+
+    .container {
+        width: 94%;
+        max-width: 1200px;
+        margin: 25px auto;
+    }
+
+    .welcome {
+        background: white;
+        padding: 22px;
+        border-radius: 14px;
+        margin-bottom: 22px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+    }
+
+    .welcome h1 {
+        margin: 0 0 8px;
+    }
+
+    .welcome p {
+        margin: 0;
+        color: #666;
+    }
+
+    .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 18px;
+        margin-bottom: 25px;
+    }
+
+    .card {
+        background: white;
+        padding: 20px;
+        border-radius: 14px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+    }
+
+    .card-title {
+        color: #6b7280;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+
+    .card-value {
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .section {
+        background: white;
+        padding: 22px;
+        border-radius: 14px;
+        margin-bottom: 25px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+    }
+
+    .section h2 {
+        margin-top: 0;
+    }
+
+    .actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 14px;
+    }
+
+    .action {
+        display: block;
+        text-decoration: none;
+        background: #f3f4f6;
+        color: #111827;
+        padding: 16px;
+        border-radius: 10px;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .action:hover {
+        background: #e5e7eb;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 700px;
+    }
+
+    th,
+    td {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+    }
+
+    th {
+        background: #f8f9fa;
+    }
+
+    .save {
+        color: #198754;
+        font-weight: bold;
+    }
+
+    .withdraw {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .empty {
+        color: #777;
+        text-align: center;
+        padding: 20px;
+    }
+
+    @media (max-width: 600px) {
 
         .topbar {
-            background: #111827;
-            color: white;
-            padding: 18px 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
+            padding: 15px;
         }
 
         .brand {
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        .admin-label {
-            font-size: 13px;
-            color: #d1d5db;
-            margin-top: 4px;
-        }
-
-        .logout {
-            background: #dc3545;
-            color: white;
-            text-decoration: none;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-weight: bold;
+            font-size: 20px;
         }
 
         .container {
-            width: 94%;
-            max-width: 1200px;
-            margin: 25px auto;
-        }
-
-        .welcome {
-            background: white;
-            padding: 22px;
-            border-radius: 14px;
-            margin-bottom: 22px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
-        }
-
-        .welcome h1 {
-            margin: 0 0 8px;
-        }
-
-        .welcome p {
-            margin: 0;
-            color: #666;
-        }
-
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-            gap: 18px;
-            margin-bottom: 25px;
-        }
-
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 14px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
-        }
-
-        .card-title {
-            color: #6b7280;
-            font-size: 14px;
-            margin-bottom: 10px;
+            width: 92%;
         }
 
         .card-value {
-            font-size: 28px;
-            font-weight: bold;
+            font-size: 24px;
         }
+    }
+</style>
+```
 
-        .section {
-            background: white;
-            padding: 22px;
-            border-radius: 14px;
-            margin-bottom: 25px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
-        }
-
-        .section h2 {
-            margin-top: 0;
-        }
-
-        .actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 14px;
-        }
-
-        .action {
-            display: block;
-            text-decoration: none;
-            background: #f3f4f6;
-            color: #111827;
-            padding: 16px;
-            border-radius: 10px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        .action:hover {
-            background: #e5e7eb;
-        }
-
-        .table-wrapper {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 700px;
-        }
-
-        th,
-        td {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-            text-align: left;
-        }
-
-        th {
-            background: #f8f9fa;
-        }
-
-        .save {
-            color: #198754;
-            font-weight: bold;
-        }
-
-        .withdraw {
-            color: #dc3545;
-            font-weight: bold;
-        }
-
-        .empty {
-            color: #777;
-            text-align: center;
-            padding: 20px;
-        }
-
-        @media (max-width: 600px) {
-
-            .topbar {
-                padding: 15px;
-            }
-
-            .brand {
-                font-size: 20px;
-            }
-
-            .container {
-                width: 92%;
-            }
-
-            .card-value {
-                font-size: 24px;
-            }
-        }
-    </style>
 </head>
 
 <body>
 
 <header class="topbar">
 
-    <div>
-        <div class="brand">Rudbit</div>
-        <div class="admin-label">Administrator Dashboard</div>
-    </div>
+```
+<div>
+    <div class="brand">Rudbit</div>
+    <div class="admin-label">Administrator Dashboard</div>
+</div>
 
-    <a class="logout" href="{{ url_for('logout') }}">
-        Logout
-    </a>
+<a class="logout" href="{{ url_for('logout') }}">
+    Logout
+</a>
+```
 
 </header>
 
-
 <div class="container">
 
-    <div class="welcome">
+```
+<div class="welcome">
 
-        <h1>Admin Dashboard</h1>
+    <h1>Admin Dashboard</h1>
 
-        <p>
-            Manage users, monitor transactions and review withdrawals.
-        </p>
+    <p>
+        Manage users, monitor transactions and review withdrawals.
+    </p>
 
-    </div>
+</div>
 
 
-    <!-- STATISTICS -->
+<!-- STATISTICS -->
 
-    <div class="cards">
+<div class="cards">
 
-        <div class="card">
+    <div class="card">
 
-            <div class="card-title">
-                Total Users
-            </div>
-
-            <div class="card-value">
-                {{ total_users }}
-            </div>
-
+        <div class="card-title">
+            Total Users
         </div>
 
-
-        <div class="card">
-
-            <div class="card-title">
-                Active Users
-            </div>
-
-            <div class="card-value">
-                {{ active_users }}
-            </div>
-
-        </div>
-
-
-        <div class="card">
-
-            <div class="card-title">
-                Pending Users
-            </div>
-
-            <div class="card-value">
-                {{ pending_users }}
-            </div>
-
-        </div>
-
-
-        <div class="card">
-
-            <div class="card-title">
-                Total Balance
-            </div>
-
-            <div class="card-value">
-                {{ "{:,.2f}".format(total_balance) }}
-            </div>
-
-        </div>
-
-
-        <div class="card">
-
-            <div class="card-title">
-                Total Saves
-            </div>
-
-            <div class="card-value">
-                {{ "{:,.2f}".format(total_saves) }}
-            </div>
-
-        </div>
-
-
-        <div class="card">
-
-            <div class="card-title">
-                Total Withdrawals
-            </div>
-
-            <div class="card-value">
-                {{ "{:,.2f}".format(total_withdrawals) }}
-            </div>
-
-        </div>
-
-
-        <div class="card">
-
-            <div class="card-title">
-                Withdrawal Requests
-            </div>
-
-            <div class="card-value">
-                {{ withdrawal_count }}
-            </div>
-
+        <div class="card-value">
+            {{ total_users }}
         </div>
 
     </div>
 
 
-    <!-- ADMIN ACTIONS -->
+    <div class="card">
 
-    <div class="section">
+        <div class="card-title">
+            Active Users
+        </div>
 
-        <h2>Management</h2>
-
-        <div class="actions">
-
-            <a class="action"
-               href="{{ url_for('admin_users') }}">
-                👥 Manage Users
-            </a>
-
-
-            <a class="action"
-               href="{{ url_for('admin_transactions') }}">
-                📋 Transactions
-            </a>
-
-
-            <a class="action"
-               href="{{ url_for('admin_withdrawals') }}">
-                💸 Withdrawals
-            </a>
-
+        <div class="card-value">
+            {{ active_users }}
         </div>
 
     </div>
 
 
-    <!-- RECENT TRANSACTIONS -->
+    <div class="card">
 
-    <div class="section">
+        <div class="card-title">
+            Pending Users
+        </div>
 
-        <h2>Recent Transactions</h2>
-
-        <div class="table-wrapper">
-
-            {% if recent_transactions %}
-
-            <table>
-
-                <thead>
-
-                    <tr>
-                        <th>ID</th>
-                        <th>User</th>
-                        <th>Type</th>
-                        <th>Amount</th>
-                        <th>Destination</th>
-                        <th>Date</th>
-                    </tr>
-
-                </thead>
-
-                <tbody>
-
-                    {% for transaction in recent_transactions %}
-
-                    <tr>
-
-                        <td>
-                            #{{ transaction["id"] }}
-                        </td>
-
-                        <td>
-                            {{ transaction["phone"] }}
-                        </td>
-
-                        <td>
-
-                            {% if transaction["transaction_type"] == "Save" %}
-
-                                <span class="save">
-                                    Save
-                                </span>
-
-                            {% else %}
-
-                                <span class="withdraw">
-                                    Withdraw
-                                </span>
-
-                            {% endif %}
-
-                        </td>
-
-                        <td>
-                            {{ "{:,.2f}".format(transaction["amount"]) }}
-                        </td>
-
-                        <td>
-                            {{ transaction["destination_phone"] or "-" }}
-                        </td>
-
-                        <td>
-                            {{ transaction["created_at"] }}
-                        </td>
-
-                    </tr>
-
-                    {% endfor %}
-
-                </tbody>
-
-            </table>
-
-            {% else %}
-
-                <div class="empty">
-                    No transactions yet.
-                </div>
-
-            {% endif %}
-
+        <div class="card-value">
+            {{ pending_users }}
         </div>
 
     </div>
+
+
+    <div class="card">
+
+        <div class="card-title">
+            Total Balance
+        </div>
+
+        <div class="card-value">
+            {{ "{:,.2f}".format(total_balance) }}
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="card-title">
+            Total Saves
+        </div>
+
+        <div class="card-value">
+            {{ "{:,.2f}".format(total_saves) }}
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="card-title">
+            Total Withdrawals
+        </div>
+
+        <div class="card-value">
+            {{ "{:,.2f}".format(total_withdrawals) }}
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="card-title">
+            Withdrawal Requests
+        </div>
+
+        <div class="card-value">
+            {{ withdrawal_count }}
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ADMIN ACTIONS -->
+
+<div class="section">
+
+    <h2>Management</h2>
+
+    <div class="actions">
+
+        <a class="action"
+           href="{{ url_for('admin_users') }}">
+            👥 Manage Users
+        </a>
+
+
+        <a class="action"
+           href="{{ url_for('admin_transactions') }}">
+            📋 Transactions
+        </a>
+
+
+        <a class="action"
+           href="{{ url_for('admin_withdrawals') }}">
+            💸 Withdrawals
+        </a>
+
+
+        <a class="action"
+           href="{{ url_for('admin_tasks') }}">
+            📝 Tasks
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- RECENT TRANSACTIONS -->
+
+<div class="section">
+
+    <h2>Recent Transactions</h2>
+
+    <div class="table-wrapper">
+
+        {% if recent_transactions %}
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Destination</th>
+                    <th>Date</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for transaction in recent_transactions %}
+
+                <tr>
+
+                    <td>
+                        #{{ transaction["id"] }}
+                    </td>
+
+                    <td>
+                        {{ transaction["phone"] }}
+                    </td>
+
+                    <td>
+
+                        {% if transaction["transaction_type"] == "Save" %}
+
+                            <span class="save">
+                                Save
+                            </span>
+
+                        {% else %}
+
+                            <span class="withdraw">
+                                Withdraw
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        {{ "{:,.2f}".format(transaction["amount"]) }}
+                    </td>
+
+                    <td>
+                        {{ transaction["destination_phone"] or "-" }}
+                    </td>
+
+                    <td>
+                        {{ transaction["created_at"] }}
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        {% else %}
+
+            <div class="empty">
+                No transactions yet.
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+```
 
 </div>
 
