@@ -8,24 +8,35 @@
     flash,
     jsonify
 )
+
 from flask_wtf.csrf import CSRFProtect
+
 from werkzeug.security import (
     generate_password_hash,
     check_password_hash
 )
+
 import psycopg
 from psycopg.rows import dict_row
+
 import os
 import secrets
-from datetime import datetime, timedelta, timezone
+
+from datetime import (
+    datetime,
+    timedelta,
+    timezone
+)
 
 
 app = Flask(__name__)
+
 
 app.secret_key = os.environ.get(
     "RUD_BIT_SECRET_KEY",
     "rudbit-development-secret-key"
 )
+
 
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
@@ -47,12 +58,34 @@ csrf = CSRFProtect(app)
 
 DATABASE_URL = os.environ.get("NEON_DATABASE_URL")
 
+
+# =====================================================
+# SECURITY SETTINGS
+# =====================================================
+
 OTP_EXPIRY_MINUTES = 5
 MAX_OTP_ATTEMPTS = 5
 
 MAX_LOGIN_ATTEMPTS = 5
 LOGIN_LOCK_MINUTES = 15
 
+
+# =====================================================
+# RUD_BIT TASK CYCLE SETTINGS
+# =====================================================
+
+TASK_CYCLE_SAVE_AMOUNT = 3000.0
+TASK_CYCLE_REWARD = 2500.0
+TASK_CYCLE_DAYS = 3
+
+TASK_CYCLE_DURATION = timedelta(
+    days=TASK_CYCLE_DAYS
+)
+
+
+# =====================================================
+# DATABASE CONNECTION
+# =====================================================
 
 def get_db():
     if not DATABASE_URL:
@@ -80,9 +113,11 @@ def parse_datetime(value):
 
     if isinstance(value, datetime):
         parsed = value
+
     else:
         try:
             parsed = datetime.fromisoformat(value)
+
         except (ValueError, TypeError):
             return None
 
@@ -134,6 +169,504 @@ def create_notification(
 
 
 # =====================================================
+# TASK CYCLE HELPERS
+# =====================================================
+
+def get_active_task_cycle(
+    conn,
+    user_id,
+    for_update=False
+):
+    lock_sql = " FOR UPDATE" if for_update else ""
+
+    return conn.execute(
+        f"""
+        SELECT *
+        FROM task_cycles
+        WHERE user_id = %s
+        AND status = 'Active'
+        ORDER BY id DESC
+        LIMIT 1
+        {lock_sql}
+        """,
+        (
+            user_id,
+        )
+    ).fetchone()
+
+
+def get_task_cycle_day(
+    conn,
+    cycle_id,
+    day_number
+):
+    return conn.execute("""
+        SELECT
+            tcd.*,
+            t.title AS task_title,
+            t.description AS task_description,
+            t.instructions AS task_instructions,
+            t.reward AS task_reward,
+            t.max_users,
+            t.deadline,
+            t.proof_type,
+            t.status AS task_status
+        FROM task_cycle_days tcd
+        LEFT JOIN tasks t
+            ON tcd.task_id = t.id
+        WHERE tcd.cycle_id = %s
+        AND tcd.day_number = %s
+        LIMIT 1
+    """, (
+        cycle_id,
+        day_number
+    )).fetchone()
+
+
+def get_current_cycle_day_number(cycle):
+    if not cycle:
+        return None
+
+    started_at = parse_datetime(
+        cycle["started_at"]
+    )
+
+    if not started_at:
+        return None
+
+    elapsed = utc_now() - started_at
+
+    if elapsed.total_seconds() < 0:
+        return 1
+
+    day_number = int(
+        elapsed.total_seconds() // 86400
+    ) + 1
+
+    return min(
+        day_number,
+        TASK_CYCLE_DAYS
+    )
+
+
+def format_remaining_time(seconds):
+    seconds = max(
+        0,
+        int(seconds)
+    )
+
+    days = seconds // 86400
+    seconds %= 86400
+
+    hours = seconds // 3600
+    seconds %= 3600
+
+    minutes = seconds // 60
+    seconds %= 60
+
+    parts = []
+
+    if days:
+        parts.append(
+            f"{days} day(s)"
+        )
+
+    if hours:
+        parts.append(
+            f"{hours} hour(s)"
+        )
+
+    if minutes:
+        parts.append(
+            f"{minutes} minute(s)"
+        )
+
+    if not parts:
+        parts.append(
+            f"{seconds} second(s)"
+        )
+
+    return ", ".join(parts)
+
+
+def assign_task_to_cycle_day(
+    conn,
+    cycle_id,
+    day_number
+):
+    existing_day = conn.execute("""
+        SELECT *
+        FROM task_cycle_days
+        WHERE cycle_id = %s
+        AND day_number = %s
+        LIMIT 1
+    """, (
+        cycle_id,
+        day_number
+    )).fetchone()
+
+    if existing_day:
+        return existing_day
+
+    # -------------------------------------------------
+    # Pick a published task.
+    #
+    # Day 1 -> newest published task
+    # Day 2 -> second newest if available
+    # Day 3 -> third newest if available
+    #
+    # If there are fewer than 3 published tasks,
+    # the newest published task is reused.
+    # -------------------------------------------------
+
+    published_tasks = conn.execute("""
+        SELECT
+            id,
+            title,
+            description,
+            instructions,
+            reward,
+            max_users,
+            deadline,
+            proof_type,
+            status
+        FROM tasks
+        WHERE status = 'Published'
+        AND (
+            deadline IS NULL
+            OR deadline >= CURRENT_TIMESTAMP
+        )
+        ORDER BY id DESC
+    """).fetchall()
+
+    task_id = None
+
+    if published_tasks:
+        index = day_number - 1
+
+        if index >= len(published_tasks):
+            index = 0
+
+        task_id = published_tasks[index]["id"]
+
+    conn.execute("""
+        INSERT INTO task_cycle_days
+        (
+            cycle_id,
+            day_number,
+            task_id,
+            reward,
+            status,
+            notification_sent
+        )
+        VALUES (%s, %s, %s, %s, %s, FALSE)
+    """, (
+        cycle_id,
+        day_number,
+        task_id,
+        TASK_CYCLE_REWARD,
+        "Available"
+    ))
+
+    return conn.execute("""
+        SELECT *
+        FROM task_cycle_days
+        WHERE cycle_id = %s
+        AND day_number = %s
+        LIMIT 1
+    """, (
+        cycle_id,
+        day_number
+    )).fetchone()
+
+
+def ensure_task_cycle_progress(
+    conn,
+    user_id
+):
+    cycle = get_active_task_cycle(
+        conn,
+        user_id,
+        for_update=True
+    )
+
+    if not cycle:
+        return None
+
+    started_at = parse_datetime(
+        cycle["started_at"]
+    )
+
+    unlock_at = parse_datetime(
+        cycle["unlock_at"]
+    )
+
+    if not started_at:
+        return cycle
+
+    now = utc_now()
+
+    # -------------------------------------------------
+    # Cycle has reached withdrawal unlock time.
+    # -------------------------------------------------
+
+    if unlock_at and now >= unlock_at:
+        conn.execute("""
+            UPDATE task_cycles
+            SET status = 'Completed'
+            WHERE id = %s
+            AND status = 'Active'
+        """, (
+            cycle["id"],
+        ))
+
+        cycle["status"] = "Completed"
+
+        return cycle
+
+    current_day = get_current_cycle_day_number(
+        cycle
+    )
+
+    if not current_day:
+        return cycle
+
+    # -------------------------------------------------
+    # Ensure current day assignment exists.
+    # -------------------------------------------------
+
+    cycle_day = assign_task_to_cycle_day(
+        conn,
+        cycle["id"],
+        current_day
+    )
+
+    # -------------------------------------------------
+    # If a task exists and notification has not been
+    # sent yet, send it now.
+    # -------------------------------------------------
+
+    if (
+        cycle_day
+        and cycle_day["task_id"]
+        and not cycle_day["notification_sent"]
+    ):
+        task = conn.execute("""
+            SELECT
+                id,
+                title
+            FROM tasks
+            WHERE id = %s
+        """, (
+            cycle_day["task_id"],
+        )).fetchone()
+
+        if task:
+            create_notification(
+                conn,
+                user_id,
+                f"Day {current_day} Task Available",
+                (
+                    f'Your Day {current_day} task '
+                    f'"{task["title"]}" is now available. '
+                    f'Complete it and submit your proof. '
+                    f'Your reward is '
+                    f'{TASK_CYCLE_REWARD:,.0f} Frw.'
+                ),
+                "info"
+            )
+
+            conn.execute("""
+                UPDATE task_cycle_days
+                SET notification_sent = TRUE
+                WHERE id = %s
+            """, (
+                cycle_day["id"],
+            ))
+
+    # -------------------------------------------------
+    # If no task was available when the cycle started,
+    # try again whenever the user opens a task-related
+    # page.
+    # -------------------------------------------------
+
+    conn.commit()
+
+    return cycle
+
+
+def start_task_cycle(
+    conn,
+    user_id,
+    save_transaction_id
+):
+    # -------------------------------------------------
+    # Do not create another active cycle.
+    # -------------------------------------------------
+
+    existing_cycle = get_active_task_cycle(
+        conn,
+        user_id,
+        for_update=True
+    )
+
+    if existing_cycle:
+        return existing_cycle, False
+
+    started_at = utc_now()
+
+    unlock_at = (
+        started_at
+        + TASK_CYCLE_DURATION
+    )
+
+    cursor = conn.execute("""
+        INSERT INTO task_cycles
+        (
+            user_id,
+            save_transaction_id,
+            started_at,
+            unlock_at,
+            status
+        )
+        VALUES (%s, %s, %s, %s, %s)
+        RETURNING id
+    """, (
+        user_id,
+        save_transaction_id,
+        started_at,
+        unlock_at,
+        "Active"
+    ))
+
+    cycle_id = cursor.fetchone()["id"]
+
+    cycle = conn.execute("""
+        SELECT *
+        FROM task_cycles
+        WHERE id = %s
+    """, (
+        cycle_id,
+    )).fetchone()
+
+    # -------------------------------------------------
+    # Create Day 1 immediately.
+    # -------------------------------------------------
+
+    cycle_day = assign_task_to_cycle_day(
+        conn,
+        cycle_id,
+        1
+    )
+
+    if cycle_day and cycle_day["task_id"]:
+        task = conn.execute("""
+            SELECT
+                id,
+                title
+            FROM tasks
+            WHERE id = %s
+        """, (
+            cycle_day["task_id"],
+        )).fetchone()
+
+        if task:
+            create_notification(
+                conn,
+                user_id,
+                "Your Day 1 Task Is Ready",
+                (
+                    f'Your 3-day task cycle has started. '
+                    f'Your Day 1 task is '
+                    f'"{task["title"]}". '
+                    f'Complete it and submit proof. '
+                    f'You will receive '
+                    f'{TASK_CYCLE_REWARD:,.0f} Frw '
+                    f'when the task is approved.'
+                ),
+                "success"
+            )
+
+            conn.execute("""
+                UPDATE task_cycle_days
+                SET notification_sent = TRUE
+                WHERE id = %s
+            """, (
+                cycle_day["id"],
+            ))
+
+    else:
+        create_notification(
+            conn,
+            user_id,
+            "Task Cycle Started",
+            (
+                "Your 3-day task cycle has started, "
+                "but there is currently no published task. "
+                "Your task will appear automatically when "
+                "the administrator publishes one."
+            ),
+            "warning"
+        )
+
+    return cycle, True
+
+
+def get_withdrawal_lock_info(
+    conn,
+    user_id
+):
+    cycle = get_active_task_cycle(
+        conn,
+        user_id,
+        for_update=False
+    )
+
+    if not cycle:
+        return {
+            "locked": False,
+            "cycle": None,
+            "remaining_seconds": 0,
+            "remaining_text": ""
+        }
+
+    unlock_at = parse_datetime(
+        cycle["unlock_at"]
+    )
+
+    if not unlock_at:
+        return {
+            "locked": False,
+            "cycle": cycle,
+            "remaining_seconds": 0,
+            "remaining_text": ""
+        }
+
+    remaining_seconds = (
+        unlock_at - utc_now()
+    ).total_seconds()
+
+    if remaining_seconds <= 0:
+        return {
+            "locked": False,
+            "cycle": cycle,
+            "remaining_seconds": 0,
+            "remaining_text": ""
+        }
+
+    return {
+        "locked": True,
+        "cycle": cycle,
+        "remaining_seconds": int(
+            remaining_seconds
+        ),
+        "remaining_text": format_remaining_time(
+            remaining_seconds
+        )
+    }
+
+
+# =====================================================
 # DATABASE INITIALIZATION
 # =====================================================
 
@@ -141,6 +674,7 @@ def init_db():
     conn = get_db()
 
     try:
+
         # =================================================
         # USERS
         # =================================================
@@ -180,7 +714,7 @@ def init_db():
             UPDATE users
             SET role = 'user'
             WHERE role IS NULL
-               OR role = ''
+            OR role = ''
         """)
 
         conn.execute("""
@@ -188,6 +722,7 @@ def init_db():
             SET failed_login_attempts = 0
             WHERE failed_login_attempts IS NULL
         """)
+
 
         # =================================================
         # TRANSACTIONS
@@ -200,6 +735,7 @@ def init_db():
                 transaction_type TEXT NOT NULL,
                 amount DOUBLE PRECISION NOT NULL,
                 destination_phone TEXT,
+                network TEXT,
                 status TEXT DEFAULT 'Completed',
                 reference_id TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -217,6 +753,12 @@ def init_db():
         conn.execute("""
             ALTER TABLE transactions
             ADD COLUMN IF NOT EXISTS
+            network TEXT
+        """)
+
+        conn.execute("""
+            ALTER TABLE transactions
+            ADD COLUMN IF NOT EXISTS
             status TEXT DEFAULT 'Completed'
         """)
 
@@ -225,6 +767,7 @@ def init_db():
             ADD COLUMN IF NOT EXISTS
             reference_id TEXT
         """)
+
 
         # =================================================
         # PASSWORD RESETS
@@ -243,6 +786,7 @@ def init_db():
                     REFERENCES users(id)
             )
         """)
+
 
         # =================================================
         # TASKS
@@ -307,6 +851,7 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         """)
 
+
         # =================================================
         # TASK SUBMISSIONS
         # =================================================
@@ -316,6 +861,7 @@ def init_db():
                 id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
                 task_id BIGINT NOT NULL,
                 user_id BIGINT NOT NULL,
+                cycle_day_id BIGINT,
                 proof TEXT,
                 status TEXT DEFAULT 'Pending',
                 reviewed_by BIGINT,
@@ -329,6 +875,12 @@ def init_db():
                 FOREIGN KEY (reviewed_by)
                     REFERENCES users(id)
             )
+        """)
+
+        conn.execute("""
+            ALTER TABLE task_submissions
+            ADD COLUMN IF NOT EXISTS
+            cycle_day_id BIGINT
         """)
 
         conn.execute("""
@@ -349,7 +901,11 @@ def init_db():
             reviewed_at TIMESTAMP
         """)
 
+
         # =================================================
+        conn.execute('ALTER TABLE task_submissions ADD COLUMN IF NOT EXISTS proof_screenshot BYTEA')
+        conn.execute('ALTER TABLE task_submissions ADD COLUMN IF NOT EXISTS proof_screenshot_mime TEXT')
+
         # NOTIFICATIONS
         # =================================================
 
@@ -402,7 +958,7 @@ def init_db():
             UPDATE notifications
             SET notification_type = 'info'
             WHERE notification_type IS NULL
-               OR notification_type = ''
+            OR notification_type = ''
         """)
 
         conn.execute("""
@@ -423,6 +979,127 @@ def init_db():
             ON notifications(user_id, is_read)
         """)
 
+
+        # =================================================
+        # TASK CYCLES
+        # =================================================
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS task_cycles (
+                id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+                user_id BIGINT NOT NULL,
+                save_transaction_id BIGINT,
+                started_at TIMESTAMP NOT NULL,
+                unlock_at TIMESTAMP NOT NULL,
+                status TEXT DEFAULT 'Active',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id)
+                    REFERENCES users(id)
+                    ON DELETE CASCADE,
+                FOREIGN KEY (save_transaction_id)
+                    REFERENCES transactions(id)
+                    ON DELETE SET NULL
+            )
+        """)
+
+        conn.execute("""
+            ALTER TABLE task_cycles
+            ADD COLUMN IF NOT EXISTS
+            save_transaction_id BIGINT
+        """)
+
+        conn.execute("""
+            ALTER TABLE task_cycles
+            ADD COLUMN IF NOT EXISTS
+            started_at TIMESTAMP
+        """)
+
+        conn.execute("""
+            ALTER TABLE task_cycles
+            ADD COLUMN IF NOT EXISTS
+            unlock_at TIMESTAMP
+        """)
+
+        conn.execute("""
+            ALTER TABLE task_cycles
+            ADD COLUMN IF NOT EXISTS
+            status TEXT DEFAULT 'Active'
+        """)
+
+        conn.execute("""
+            ALTER TABLE task_cycles
+            ADD COLUMN IF NOT EXISTS
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        """)
+
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS
+            idx_task_cycles_user_status
+            ON task_cycles(user_id, status)
+        """)
+
+
+        # =================================================
+        # TASK CYCLE DAYS
+        # =================================================
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS task_cycle_days (
+                id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+                cycle_id BIGINT NOT NULL,
+                day_number INTEGER NOT NULL,
+                task_id BIGINT,
+                reward DOUBLE PRECISION NOT NULL DEFAULT 2500,
+                status TEXT DEFAULT 'Available',
+                notification_sent BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (cycle_id)
+                    REFERENCES task_cycles(id)
+                    ON DELETE CASCADE,
+                FOREIGN KEY (task_id)
+                    REFERENCES tasks(id)
+                    ON DELETE SET NULL,
+                UNIQUE (cycle_id, day_number)
+            )
+        """)
+
+        conn.execute("""
+            ALTER TABLE task_cycle_days
+            ADD COLUMN IF NOT EXISTS
+            task_id BIGINT
+        """)
+
+        conn.execute("""
+            ALTER TABLE task_cycle_days
+            ADD COLUMN IF NOT EXISTS
+            reward DOUBLE PRECISION DEFAULT 2500
+        """)
+
+        conn.execute("""
+            ALTER TABLE task_cycle_days
+            ADD COLUMN IF NOT EXISTS
+            status TEXT DEFAULT 'Available'
+        """)
+
+        conn.execute("""
+            ALTER TABLE task_cycle_days
+            ADD COLUMN IF NOT EXISTS
+            notification_sent BOOLEAN DEFAULT FALSE
+        """)
+
+        conn.execute("""
+            ALTER TABLE task_cycle_days
+            ADD COLUMN IF NOT EXISTS
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        """)
+
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS
+            idx_task_cycle_days_cycle
+            ON task_cycle_days(cycle_id, day_number)
+        """)
+
+
         # =================================================
         # OLD TRANSACTION REFERENCES
         # =================================================
@@ -431,7 +1108,7 @@ def init_db():
             SELECT id
             FROM transactions
             WHERE reference_id IS NULL
-               OR reference_id = ''
+            OR reference_id = ''
             ORDER BY id
         """).fetchall()
 
@@ -449,13 +1126,17 @@ def init_db():
                 transaction["id"]
             ))
 
+
         # =================================================
         # IDENTITY SEQUENCES
         # =================================================
 
         conn.execute("""
             SELECT setval(
-                pg_get_serial_sequence('users', 'id'),
+                pg_get_serial_sequence(
+                    'users',
+                    'id'
+                ),
                 COALESCE(MAX(id), 1),
                 COUNT(*) > 0
             )
@@ -464,7 +1145,10 @@ def init_db():
 
         conn.execute("""
             SELECT setval(
-                pg_get_serial_sequence('transactions', 'id'),
+                pg_get_serial_sequence(
+                    'transactions',
+                    'id'
+                ),
                 COALESCE(MAX(id), 1),
                 COUNT(*) > 0
             )
@@ -485,7 +1169,10 @@ def init_db():
 
         conn.execute("""
             SELECT setval(
-                pg_get_serial_sequence('tasks', 'id'),
+                pg_get_serial_sequence(
+                    'tasks',
+                    'id'
+                ),
                 COALESCE(MAX(id), 1),
                 COUNT(*) > 0
             )
@@ -516,6 +1203,30 @@ def init_db():
             FROM notifications
         """)
 
+        conn.execute("""
+            SELECT setval(
+                pg_get_serial_sequence(
+                    'task_cycles',
+                    'id'
+                ),
+                COALESCE(MAX(id), 1),
+                COUNT(*) > 0
+            )
+            FROM task_cycles
+        """)
+
+        conn.execute("""
+            SELECT setval(
+                pg_get_serial_sequence(
+                    'task_cycle_days',
+                    'id'
+                ),
+                COALESCE(MAX(id), 1),
+                COUNT(*) > 0
+            )
+            FROM task_cycle_days
+        """)
+
         conn.commit()
 
     except Exception:
@@ -533,6 +1244,7 @@ def init_db():
 @app.route("/")
 def home():
     if "user_id" in session:
+
         if session.get("role") == "admin":
             return redirect(
                 url_for("admin_dashboard")
@@ -556,7 +1268,9 @@ def home():
     methods=["GET", "POST"]
 )
 def register():
+
     if request.method == "POST":
+
         country_code = request.form.get(
             "country_code",
             ""
@@ -594,7 +1308,10 @@ def register():
         if phone.startswith("0"):
             phone = phone[1:]
 
-        full_phone = country_code + phone
+        full_phone = (
+            country_code
+            + phone
+        )
 
         if not country_code or not phone:
             flash(
@@ -629,6 +1346,7 @@ def register():
         conn = get_db()
 
         try:
+
             existing_user = conn.execute("""
                 SELECT id
                 FROM users
@@ -662,12 +1380,20 @@ def register():
                     failed_login_attempts,
                     locked_until
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s
+                )
             """, (
                 full_phone,
                 hashed_password,
                 0,
-                "Pending",
+                "Active",
                 "user",
                 0,
                 None
@@ -705,7 +1431,9 @@ def register():
     methods=["GET", "POST"]
 )
 def login():
+
     if request.method == "POST":
+
         country_code = request.form.get(
             "country_code",
             ""
@@ -738,11 +1466,15 @@ def login():
         if phone.startswith("0"):
             phone = phone[1:]
 
-        full_phone = country_code + phone
+        full_phone = (
+            country_code
+            + phone
+        )
 
         conn = get_db()
 
         try:
+
             user = conn.execute("""
                 SELECT *
                 FROM users
@@ -760,6 +1492,7 @@ def login():
                 return redirect(
                     url_for("login")
                 )
+
 
             # =================================================
             # ACCOUNT STATUS
@@ -779,6 +1512,7 @@ def login():
                     url_for("login")
                 )
 
+
             # =================================================
             # LOGIN LOCK
             # =================================================
@@ -786,11 +1520,16 @@ def login():
             locked_until = user["locked_until"]
 
             if locked_until:
+
                 lock_time = parse_datetime(
                     locked_until
                 )
 
-                if lock_time and utc_now() < lock_time:
+                if (
+                    lock_time
+                    and utc_now() < lock_time
+                ):
+
                     remaining_seconds = (
                         lock_time - utc_now()
                     ).total_seconds()
@@ -798,13 +1537,17 @@ def login():
                     remaining_minutes = max(
                         1,
                         int(
-                            (remaining_seconds + 59) // 60
+                            (
+                                remaining_seconds
+                                + 59
+                            )
+                            // 60
                         )
                     )
 
                     flash(
-                        f"Account temporarily locked. "
-                        f"Please try again in approximately "
+                        "Account temporarily locked. "
+                        "Please try again in approximately "
                         f"{remaining_minutes} minute(s).",
                         "error"
                     )
@@ -832,6 +1575,7 @@ def login():
                     user["id"],
                 )).fetchone()
 
+
             # =================================================
             # PASSWORD CHECK
             # =================================================
@@ -842,12 +1586,17 @@ def login():
             )
 
             if not password_is_correct:
+
                 new_attempts = (
-                    (user["failed_login_attempts"] or 0)
+                    (
+                        user["failed_login_attempts"]
+                        or 0
+                    )
                     + 1
                 )
 
                 if new_attempts >= MAX_LOGIN_ATTEMPTS:
+
                     lock_until = (
                         utc_now()
                         + timedelta(
@@ -896,7 +1645,7 @@ def login():
                 )
 
                 flash(
-                    f"Phone number or password is incorrect. "
+                    "Phone number or password is incorrect. "
                     f"{remaining_attempts} attempt(s) remaining.",
                     "error"
                 )
@@ -904,6 +1653,7 @@ def login():
                 return redirect(
                     url_for("login")
                 )
+
 
             # =================================================
             # SUCCESSFUL LOGIN
@@ -952,7 +1702,9 @@ def login():
     methods=["GET", "POST"]
 )
 def forgot_password():
+
     if request.method == "POST":
+
         country_code = request.form.get(
             "country_code",
             ""
@@ -980,7 +1732,10 @@ def forgot_password():
         if phone.startswith("0"):
             phone = phone[1:]
 
-        full_phone = country_code + phone
+        full_phone = (
+            country_code
+            + phone
+        )
 
         if not country_code or not phone:
             flash(
@@ -995,6 +1750,7 @@ def forgot_password():
         conn = get_db()
 
         try:
+
             user = conn.execute("""
                 SELECT *
                 FROM users
@@ -1091,12 +1847,14 @@ def forgot_password():
     methods=["GET", "POST"]
 )
 def verify_reset_otp():
+
     if "reset_user_id" not in session:
         return redirect(
             url_for("forgot_password")
         )
 
     if request.method == "POST":
+
         entered_otp = request.form.get(
             "otp",
             ""
@@ -1115,6 +1873,7 @@ def verify_reset_otp():
         conn = get_db()
 
         try:
+
             reset = conn.execute("""
                 SELECT *
                 FROM password_resets
@@ -1127,6 +1886,7 @@ def verify_reset_otp():
             )).fetchone()
 
             if not reset:
+
                 session.pop(
                     "development_otp",
                     None
@@ -1146,7 +1906,11 @@ def verify_reset_otp():
                 reset["expires_at"]
             )
 
-            if not expires_at or utc_now() > expires_at:
+            if (
+                not expires_at
+                or utc_now() > expires_at
+            ):
+
                 conn.execute("""
                     UPDATE password_resets
                     SET used = 1
@@ -1173,6 +1937,7 @@ def verify_reset_otp():
                 )
 
             if reset["attempts"] >= MAX_OTP_ATTEMPTS:
+
                 conn.execute("""
                     UPDATE password_resets
                     SET used = 1
@@ -1202,6 +1967,7 @@ def verify_reset_otp():
                 reset["otp_hash"],
                 entered_otp
             ):
+
                 conn.execute("""
                     UPDATE password_resets
                     SET attempts = attempts + 1
@@ -1219,7 +1985,7 @@ def verify_reset_otp():
                 )
 
                 flash(
-                    f"Incorrect OTP. "
+                    "Incorrect OTP. "
                     f"{remaining_attempts} attempts remaining.",
                     "error"
                 )
@@ -1275,6 +2041,7 @@ def verify_reset_otp():
     methods=["GET", "POST"]
 )
 def reset_password():
+
     if "reset_user_id" not in session:
         return redirect(
             url_for("forgot_password")
@@ -1286,6 +2053,7 @@ def reset_password():
         )
 
     if request.method == "POST":
+
         new_password = request.form.get(
             "new_password",
             ""
@@ -1329,6 +2097,7 @@ def reset_password():
         conn = get_db()
 
         try:
+
             user = conn.execute("""
                 SELECT *
                 FROM users
@@ -1428,6 +2197,7 @@ def reset_password():
 
 @app.route("/dashboard")
 def dashboard():
+
     if "user_id" not in session:
         return redirect(
             url_for("login")
@@ -1441,6 +2211,7 @@ def dashboard():
     conn = get_db()
 
     try:
+
         user = conn.execute("""
             SELECT *
             FROM users
@@ -1456,6 +2227,15 @@ def dashboard():
                 url_for("login")
             )
 
+        # -------------------------------------------------
+        # Update task cycle progress.
+        # -------------------------------------------------
+
+        cycle = ensure_task_cycle_progress(
+            conn,
+            session["user_id"]
+        )
+
         transactions = conn.execute("""
             SELECT *
             FROM transactions
@@ -1466,57 +2246,101 @@ def dashboard():
             session["user_id"],
         )).fetchall()
 
+
         # TOTAL SAVED
+
         total_saved = conn.execute("""
             SELECT COALESCE(
-                SUM(amount), 0
+                SUM(amount),
+                0
             ) AS total_saved
             FROM transactions
             WHERE user_id = %s
-              AND transaction_type = 'Save'
-              AND status = 'Completed'
+            AND transaction_type = 'Save'
+            AND status = 'Completed'
         """, (
             session["user_id"],
         )).fetchone()["total_saved"]
 
+
         # TOTAL EARNED FROM TASKS
+
         total_earned = conn.execute("""
             SELECT COALESCE(
-                SUM(amount), 0
+                SUM(amount),
+                0
             ) AS total_earned
             FROM transactions
             WHERE user_id = %s
-              AND transaction_type = 'Task Reward'
-              AND status = 'Completed'
+            AND transaction_type = 'Task Reward'
+            AND status = 'Completed'
         """, (
             session["user_id"],
         )).fetchone()["total_earned"]
 
+
         # TOTAL WITHDRAWN
+
         total_withdrawn = conn.execute("""
             SELECT COALESCE(
-                SUM(amount), 0
+                SUM(amount),
+                0
             ) AS total_withdrawn
             FROM transactions
             WHERE user_id = %s
-              AND transaction_type = 'Withdraw'
-              AND status = 'Completed'
+            AND transaction_type = 'Withdraw'
+            AND status = 'Completed'
         """, (
             session["user_id"],
         )).fetchone()["total_withdrawn"]
 
+
         # PENDING WITHDRAWALS
+
         pending_withdrawals = conn.execute("""
             SELECT COALESCE(
-                SUM(amount), 0
+                SUM(amount),
+                0
             ) AS pending_withdrawals
             FROM transactions
             WHERE user_id = %s
-              AND transaction_type = 'Withdraw'
-              AND status = 'Pending'
+            AND transaction_type = 'Withdraw'
+            AND status = 'Pending'
         """, (
             session["user_id"],
         )).fetchone()["pending_withdrawals"]
+
+
+        # -------------------------------------------------
+        # Current task cycle information
+        # -------------------------------------------------
+
+        cycle_day = None
+        current_day_number = None
+        withdrawal_lock = None
+
+        if cycle and cycle["status"] == "Active":
+
+            current_day_number = (
+                get_current_cycle_day_number(
+                    cycle
+                )
+            )
+
+            if current_day_number:
+
+                cycle_day = get_task_cycle_day(
+                    conn,
+                    cycle["id"],
+                    current_day_number
+                )
+
+                withdrawal_lock = (
+                    get_withdrawal_lock_info(
+                        conn,
+                        session["user_id"]
+                    )
+                )
 
     finally:
         conn.close()
@@ -1528,11 +2352,21 @@ def dashboard():
         total_saved=total_saved,
         total_earned=total_earned,
         total_withdrawn=total_withdrawn,
-        pending_withdrawals=pending_withdrawals
+        pending_withdrawals=pending_withdrawals,
+        task_cycle=cycle,
+        task_cycle_day=cycle_day,
+        current_day_number=current_day_number,
+        withdrawal_lock=withdrawal_lock
     )
+
+
+# =====================================================
+# NOTIFICATIONS
+# =====================================================
 
 @app.route("/notifications")
 def notifications():
+
     if "user_id" not in session:
         return redirect(
             url_for("login")
@@ -1546,6 +2380,14 @@ def notifications():
     conn = get_db()
 
     try:
+
+        # Make sure today's task notification exists.
+
+        ensure_task_cycle_progress(
+            conn,
+            session["user_id"]
+        )
+
         user_notifications = conn.execute("""
             SELECT
                 id,
@@ -1587,6 +2429,7 @@ def notifications():
 
 @app.route("/api/notifications")
 def notification_api():
+
     if "user_id" not in session:
         return jsonify({
             "success": False,
@@ -1596,12 +2439,21 @@ def notification_api():
     if session.get("role") == "admin":
         return jsonify({
             "success": False,
-            "message": "Admin accounts do not use user notifications."
+            "message": (
+                "Admin accounts do not use "
+                "user notifications."
+            )
         }), 403
 
     conn = get_db()
 
     try:
+
+        ensure_task_cycle_progress(
+            conn,
+            session["user_id"]
+        )
+
         notifications_data = conn.execute("""
             SELECT
                 id,
@@ -1633,9 +2485,13 @@ def notification_api():
     result = []
 
     for notification in notifications_data:
+
         created_at = notification["created_at"]
 
-        if isinstance(created_at, datetime):
+        if isinstance(
+            created_at,
+            datetime
+        ):
             created_at = created_at.isoformat()
 
         result.append({
@@ -1667,7 +2523,10 @@ def notification_api():
     "/notifications/<int:notification_id>/read",
     methods=["POST"]
 )
-def mark_notification_read(notification_id):
+def mark_notification_read(
+    notification_id
+):
+
     if "user_id" not in session:
         return redirect(
             url_for("login")
@@ -1681,6 +2540,7 @@ def mark_notification_read(notification_id):
     conn = get_db()
 
     try:
+
         conn.execute("""
             UPDATE notifications
             SET is_read = TRUE
@@ -1714,6 +2574,7 @@ def mark_notification_read(notification_id):
     methods=["POST"]
 )
 def mark_all_notifications_read():
+
     if "user_id" not in session:
         return redirect(
             url_for("login")
@@ -1727,6 +2588,7 @@ def mark_all_notifications_read():
     conn = get_db()
 
     try:
+
         conn.execute("""
             UPDATE notifications
             SET is_read = TRUE
@@ -1755,6 +2617,7 @@ def mark_all_notifications_read():
 # =====================================================
 
 def admin_required():
+
     if "user_id" not in session:
         return False
 
@@ -1773,6 +2636,7 @@ def admin_required():
     methods=["POST"]
 )
 def admin_send_notification():
+
     if not admin_required():
         return redirect(
             url_for("login")
@@ -1819,7 +2683,10 @@ def admin_send_notification():
     try:
         user_id = int(user_id_text)
 
-    except (ValueError, TypeError):
+    except (
+        ValueError,
+        TypeError
+    ):
         flash(
             "Invalid user ID.",
             "error"
@@ -1858,6 +2725,7 @@ def admin_send_notification():
     conn = get_db()
 
     try:
+
         user = conn.execute("""
             SELECT
                 id,
@@ -1915,6 +2783,7 @@ def admin_send_notification():
 
 @app.route("/tasks")
 def tasks():
+
     if "user_id" not in session:
         return redirect(
             url_for("login")
@@ -1928,47 +2797,89 @@ def tasks():
     conn = get_db()
 
     try:
-        tasks = conn.execute("""
-            SELECT
-                t.id,
-                t.title,
-                t.description,
-                t.instructions,
-                t.reward,
-                t.max_users,
-                t.deadline,
-                t.proof_type,
-                t.status,
-                t.created_at,
-                COUNT(ts.id) AS submission_count
-            FROM tasks t
-            LEFT JOIN task_submissions ts
-                ON t.id = ts.task_id
-            WHERE t.status = 'Published'
-            AND (
-                t.deadline IS NULL
-                OR t.deadline >= CURRENT_TIMESTAMP
+
+        cycle = ensure_task_cycle_progress(
+            conn,
+            session["user_id"]
+        )
+
+        tasks_list = []
+
+        current_day_number = None
+        cycle_day = None
+
+        if (
+            cycle
+            and cycle["status"] == "Active"
+        ):
+
+            current_day_number = (
+                get_current_cycle_day_number(
+                    cycle
+                )
             )
-            GROUP BY
-                t.id,
-                t.title,
-                t.description,
-                t.instructions,
-                t.reward,
-                t.max_users,
-                t.deadline,
-                t.proof_type,
-                t.status,
-                t.created_at
-            ORDER BY t.id DESC
-        """).fetchall()
+
+            if current_day_number:
+
+                cycle_day = get_task_cycle_day(
+                    conn,
+                    cycle["id"],
+                    current_day_number
+                )
+
+                if (
+                    cycle_day
+                    and cycle_day["task_id"]
+                ):
+
+                    task = conn.execute("""
+                        SELECT
+                            t.id,
+                            t.title,
+                            t.description,
+                            t.instructions,
+                            t.reward,
+                            t.max_users,
+                            t.deadline,
+                            t.proof_type,
+                            t.status,
+                            t.created_at,
+                            COUNT(ts.id) AS submission_count
+                        FROM tasks t
+                        LEFT JOIN task_submissions ts
+                            ON t.id = ts.task_id
+                        AND ts.cycle_day_id = %s
+                        WHERE t.id = %s
+                        AND t.status = 'Published'
+                        GROUP BY
+                            t.id,
+                            t.title,
+                            t.description,
+                            t.instructions,
+                            t.reward,
+                            t.max_users,
+                            t.deadline,
+                            t.proof_type,
+                            t.status,
+                            t.created_at
+                    """, (
+                        cycle_day["id"],
+                        cycle_day["task_id"]
+                    )).fetchone()
+
+                    if task:
+                        tasks_list.append(task)
 
     finally:
         conn.close()
 
     return render_template(
         "tasks.html",
-        tasks=tasks
+        tasks=tasks_list,
+        task_cycle=cycle,
+        task_cycle_day=cycle_day,
+        current_day_number=current_day_number,
+        cycle_reward=TASK_CYCLE_REWARD
     )
 
 
@@ -1976,8 +2887,11 @@ def tasks():
 # USER TASK DETAIL
 # =====================================================
 
-@app.route("/tasks/<int:task_id>")
+@app.route(
+    "/tasks/<int:task_id>"
+)
 def task_detail(task_id):
+
     if "user_id" not in session:
         return redirect(
             url_for("login")
@@ -1991,6 +2905,50 @@ def task_detail(task_id):
     conn = get_db()
 
     try:
+
+        cycle = ensure_task_cycle_progress(
+            conn,
+            session["user_id"]
+        )
+
+        if (
+            not cycle
+            or cycle["status"] != "Active"
+        ):
+            flash(
+                "You do not currently have an active task.",
+                "error"
+            )
+
+            return redirect(
+                url_for("tasks")
+            )
+
+        current_day_number = (
+            get_current_cycle_day_number(
+                cycle
+            )
+        )
+
+        cycle_day = get_task_cycle_day(
+            conn,
+            cycle["id"],
+            current_day_number
+        )
+
+        if (
+            not cycle_day
+            or cycle_day["task_id"] != task_id
+        ):
+            flash(
+                "This task is not your current daily task.",
+                "error"
+            )
+
+            return redirect(
+                url_for("tasks")
+            )
+
         task = conn.execute("""
             SELECT
                 t.id,
@@ -2007,6 +2965,7 @@ def task_detail(task_id):
             FROM tasks t
             LEFT JOIN task_submissions ts
                 ON t.id = ts.task_id
+            AND ts.cycle_day_id = %s
             WHERE t.id = %s
             AND t.status = 'Published'
             GROUP BY
@@ -2021,39 +2980,43 @@ def task_detail(task_id):
                 t.status,
                 t.created_at
         """, (
-            task_id,
+            cycle_day["id"],
+            task_id
         )).fetchone()
+
+        if not task:
+            flash(
+                "Task not found or is no longer available.",
+                "error"
+            )
+
+            return redirect(
+                url_for("tasks")
+            )
 
         user_submission = conn.execute("""
             SELECT *
             FROM task_submissions
-            WHERE task_id = %s
+            WHERE cycle_day_id = %s
             AND user_id = %s
             ORDER BY id DESC
             LIMIT 1
         """, (
-            task_id,
+            cycle_day["id"],
             session["user_id"]
         )).fetchone()
 
     finally:
         conn.close()
 
-    if not task:
-        flash(
-            "Task not found or is no longer available.",
-            "error"
-        )
-
-        return redirect(
-            url_for("tasks")
-        )
-
     deadline = parse_datetime(
         task["deadline"]
     )
 
-    if deadline and utc_now() > deadline:
+    if (
+        deadline
+        and utc_now() > deadline
+    ):
         flash(
             "This task has expired.",
             "error"
@@ -2066,7 +3029,11 @@ def task_detail(task_id):
     return render_template(
         "task_detail.html",
         task=task,
-        user_submission=user_submission
+        user_submission=user_submission,
+        task_cycle=cycle,
+        task_cycle_day=cycle_day,
+        current_day_number=current_day_number,
+        cycle_reward=TASK_CYCLE_REWARD
     )
 
 
@@ -2079,6 +3046,7 @@ def task_detail(task_id):
     methods=["GET", "POST"]
 )
 def submit_task(task_id):
+
     if "user_id" not in session:
         return redirect(
             url_for("login")
@@ -2092,6 +3060,50 @@ def submit_task(task_id):
     conn = get_db()
 
     try:
+
+        cycle = ensure_task_cycle_progress(
+            conn,
+            session["user_id"]
+        )
+
+        if (
+            not cycle
+            or cycle["status"] != "Active"
+        ):
+            flash(
+                "You do not currently have an active task.",
+                "error"
+            )
+
+            return redirect(
+                url_for("tasks")
+            )
+
+        current_day_number = (
+            get_current_day_number
+            if False else
+            get_current_cycle_day_number(cycle)
+        )
+
+        cycle_day = get_task_cycle_day(
+            conn,
+            cycle["id"],
+            current_day_number
+        )
+
+        if (
+            not cycle_day
+            or cycle_day["task_id"] != task_id
+        ):
+            flash(
+                "This task is not your current daily task.",
+                "error"
+            )
+
+            return redirect(
+                url_for("tasks")
+            )
+
         task = conn.execute("""
             SELECT
                 t.id,
@@ -2107,6 +3119,7 @@ def submit_task(task_id):
             FROM tasks t
             LEFT JOIN task_submissions ts
                 ON t.id = ts.task_id
+            AND ts.cycle_day_id = %s
             WHERE t.id = %s
             AND t.status = 'Published'
             GROUP BY
@@ -2120,7 +3133,8 @@ def submit_task(task_id):
                 t.proof_type,
                 t.status
         """, (
-            task_id,
+            cycle_day["id"],
+            task_id
         )).fetchone()
 
         if not task:
@@ -2137,7 +3151,10 @@ def submit_task(task_id):
             task["deadline"]
         )
 
-        if deadline and utc_now() > deadline:
+        if (
+            deadline
+            and utc_now() > deadline
+        ):
             flash(
                 "This task has expired.",
                 "error"
@@ -2150,35 +3167,18 @@ def submit_task(task_id):
         existing_submission = conn.execute("""
             SELECT *
             FROM task_submissions
-            WHERE task_id = %s
+            WHERE cycle_day_id = %s
             AND user_id = %s
             ORDER BY id DESC
             LIMIT 1
         """, (
-            task_id,
+            cycle_day["id"],
             session["user_id"]
         )).fetchone()
 
         if existing_submission:
             flash(
-                "You have already submitted this task.",
-                "error"
-            )
-
-            return redirect(
-                url_for(
-                    "task_detail",
-                    task_id=task_id
-                )
-            )
-
-        if (
-            task["max_users"] is not None
-            and task["submission_count"] >= task["max_users"]
-        ):
-            flash(
-                "This task has reached its maximum number "
-                "of participants.",
+                "You have already submitted today's task.",
                 "error"
             )
 
@@ -2190,6 +3190,7 @@ def submit_task(task_id):
             )
 
         if request.method == "POST":
+
             proof = request.form.get(
                 "proof",
                 ""
@@ -2213,22 +3214,33 @@ def submit_task(task_id):
                 (
                     task_id,
                     user_id,
+                    cycle_day_id,
                     proof,
                     status
                 )
-                VALUES (%s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s)
             """, (
                 task_id,
                 session["user_id"],
+                cycle_day["id"],
                 proof,
                 "Pending"
+            ))
+
+            conn.execute("""
+                UPDATE task_cycle_days
+                SET status = 'Submitted'
+                WHERE id = %s
+            """, (
+                cycle_day["id"],
             ))
 
             conn.commit()
 
             flash(
                 "Task submitted successfully. "
-                "Your submission is now waiting for admin review.",
+                "Your submission is now waiting "
+                "for admin review.",
                 "success"
             )
 
@@ -2248,7 +3260,11 @@ def submit_task(task_id):
 
     return render_template(
         "submit_task.html",
-        task=task
+        task=task,
+        task_cycle=cycle,
+        task_cycle_day=cycle_day,
+        current_day_number=current_day_number,
+        cycle_reward=TASK_CYCLE_REWARD
     )
 
 
@@ -2261,6 +3277,7 @@ def submit_task(task_id):
     methods=["GET", "POST"]
 )
 def save():
+
     if "user_id" not in session:
         return redirect(
             url_for("login")
@@ -2272,6 +3289,7 @@ def save():
         )
 
     if request.method == "POST":
+
         amount_text = request.form.get(
             "amount",
             ""
@@ -2279,7 +3297,11 @@ def save():
 
         try:
             amount = float(amount_text)
-        except (ValueError, TypeError):
+
+        except (
+            ValueError,
+            TypeError
+        ):
             flash(
                 "Please enter a valid amount.",
                 "error"
@@ -2302,6 +3324,11 @@ def save():
         conn = get_db()
 
         try:
+
+            # -------------------------------------------------
+            # Add saved money to balance.
+            # -------------------------------------------------
+
             conn.execute("""
                 UPDATE users
                 SET balance = balance + %s
@@ -2315,7 +3342,7 @@ def save():
                 f"RUD-{secrets.token_hex(4).upper()}"
             )
 
-            conn.execute("""
+            cursor = conn.execute("""
                 INSERT INTO transactions
                 (
                     user_id,
@@ -2325,6 +3352,7 @@ def save():
                     reference_id
                 )
                 VALUES (%s, %s, %s, %s, %s)
+                RETURNING id
             """, (
                 session["user_id"],
                 "Save",
@@ -2332,6 +3360,40 @@ def save():
                 "Completed",
                 reference_id
             ))
+
+            save_transaction_id = (
+                cursor.fetchone()["id"]
+            )
+
+            # -------------------------------------------------
+            # Start a new 3-day cycle when the save reaches
+            # 3,000 Frw.
+            #
+            # If a cycle is already active, don't start
+            # another one.
+            # -------------------------------------------------
+
+            cycle_started = False
+
+            if amount >= TASK_CYCLE_SAVE_AMOUNT:
+
+                existing_cycle = (
+                    get_active_task_cycle(
+                        conn,
+                        session["user_id"],
+                        for_update=True
+                    )
+                )
+
+                if not existing_cycle:
+
+                    start_task_cycle(
+                        conn,
+                        session["user_id"],
+                        save_transaction_id
+                    )
+
+                    cycle_started = True
 
             conn.commit()
 
@@ -2342,10 +3404,25 @@ def save():
         finally:
             conn.close()
 
-        flash(
-            f"{amount:,.2f} added to your balance successfully.",
-            "success"
-        )
+        if cycle_started:
+
+            flash(
+                (
+                    f"{amount:,.0f} Frw saved successfully. "
+                    f"Your 3-day task cycle has started. "
+                    f"You can earn "
+                    f"{TASK_CYCLE_REWARD:,.0f} Frw "
+                    f"per approved daily task."
+                ),
+                "success"
+            )
+
+        else:
+
+            flash(
+                f"{amount:,.2f} added to your balance successfully.",
+                "success"
+            )
 
         return redirect(
             url_for("save_payment")
@@ -2354,6 +3431,7 @@ def save():
     conn = get_db()
 
     try:
+
         user = conn.execute("""
             SELECT *
             FROM users
@@ -2372,13 +3450,19 @@ def save():
             session["user_id"],
         )).fetchall()
 
+        cycle = ensure_task_cycle_progress(
+            conn,
+            session["user_id"]
+        )
+
     finally:
         conn.close()
 
     return render_template(
         "save.html",
         user=user,
-        transactions=transactions
+        transactions=transactions,
+        task_cycle=cycle
     )
 
 
@@ -2388,6 +3472,7 @@ def save():
 
 @app.route("/save-payment")
 def save_payment():
+
     if "user_id" not in session:
         return redirect(
             url_for("login")
@@ -2412,6 +3497,7 @@ def save_payment():
     methods=["GET", "POST"]
 )
 def withdraw():
+
     if "user_id" not in session:
         return redirect(
             url_for("login")
@@ -2423,41 +3509,50 @@ def withdraw():
         )
 
     if request.method == "POST":
+
         amount_text = request.form.get(
             "amount",
             ""
         ).strip()
 
         network = request.form.get(
-            'network',
-            ''
+            "network",
+            ""
         ).strip().lower()
 
         destination_phone = request.form.get(
-            'destination_phone',
-            ''
+            "destination_phone",
+            ""
         ).strip()
 
         destination_phone = (
             destination_phone
-            .replace(' ', '')
-            .replace('-', '')
+            .replace(" ", "")
+            .replace("-", "")
         )
 
-        allowed_networks = {"mtn", "airtel"}
+        allowed_networks = {
+            "mtn",
+            "airtel"
+        }
 
         if network not in allowed_networks:
             flash(
                 "Please select a valid mobile network.",
                 "error"
             )
+
             return redirect(
                 url_for("withdraw")
             )
 
         try:
             amount = float(amount_text)
-        except (ValueError, TypeError):
+
+        except (
+            ValueError,
+            TypeError
+        ):
             flash(
                 "Please enter a valid amount.",
                 "error"
@@ -2491,6 +3586,44 @@ def withdraw():
         conn = get_db()
 
         try:
+
+            # -------------------------------------------------
+            # Update cycle state first.
+            # -------------------------------------------------
+
+            cycle = ensure_task_cycle_progress(
+                conn,
+                session["user_id"]
+            )
+
+            # -------------------------------------------------
+            # Withdrawal lock.
+            # -------------------------------------------------
+
+            lock_info = get_withdrawal_lock_info(
+                conn,
+                session["user_id"]
+            )
+
+            if lock_info["locked"]:
+
+                flash(
+                    (
+                        "Withdrawal is currently locked. "
+                        "You can withdraw after "
+                        f"{lock_info['remaining_text']}."
+                    ),
+                    "warning"
+                )
+
+                return redirect(
+                    url_for("withdraw")
+                )
+
+            # -------------------------------------------------
+            # Lock user row before changing balance.
+            # -------------------------------------------------
+
             user = conn.execute("""
                 SELECT *
                 FROM users
@@ -2501,6 +3634,7 @@ def withdraw():
             )).fetchone()
 
             if not user:
+
                 flash(
                     "User account not found.",
                     "error"
@@ -2511,6 +3645,7 @@ def withdraw():
                 )
 
             if amount > user["balance"]:
+
                 flash(
                     "Insufficient balance for this withdrawal.",
                     "error"
@@ -2544,7 +3679,15 @@ def withdraw():
                     status,
                     reference_id
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s
+                )
             """, (
                 session["user_id"],
                 "Withdraw",
@@ -2565,8 +3708,10 @@ def withdraw():
             conn.close()
 
         flash(
-            f"Withdrawal request for {amount:,.2f} "
-            f"submitted successfully.",
+            (
+                f"Withdrawal request for "
+                f"{amount:,.2f} submitted successfully."
+            ),
             "success"
         )
 
@@ -2577,6 +3722,7 @@ def withdraw():
     conn = get_db()
 
     try:
+
         user = conn.execute("""
             SELECT *
             FROM users
@@ -2596,13 +3742,27 @@ def withdraw():
             session["user_id"],
         )).fetchall()
 
+        cycle = ensure_task_cycle_progress(
+            conn,
+            session["user_id"]
+        )
+
+        withdrawal_lock = (
+            get_withdrawal_lock_info(
+                conn,
+                session["user_id"]
+            )
+        )
+
     finally:
         conn.close()
 
     return render_template(
         "withdraw.html",
         user=user,
-        transactions=transactions
+        transactions=transactions,
+        task_cycle=cycle,
+        withdrawal_lock=withdrawal_lock
     )
 
 
@@ -2612,6 +3772,7 @@ def withdraw():
 
 @app.route("/profile")
 def profile():
+
     if "user_id" not in session:
         return redirect(
             url_for("login")
@@ -2625,6 +3786,7 @@ def profile():
     conn = get_db()
 
     try:
+
         user = conn.execute("""
             SELECT *
             FROM users
@@ -2655,6 +3817,7 @@ def profile():
 
 @app.route("/settings")
 def settings():
+
     if "user_id" not in session:
         return redirect(
             url_for("login")
@@ -2668,6 +3831,7 @@ def settings():
     conn = get_db()
 
     try:
+
         user = conn.execute("""
             SELECT *
             FROM users
@@ -2701,6 +3865,7 @@ def settings():
     methods=["GET", "POST"]
 )
 def change_password():
+
     if "user_id" not in session:
         return redirect(
             url_for("login")
@@ -2712,6 +3877,7 @@ def change_password():
         )
 
     if request.method == "POST":
+
         current_password = request.form.get(
             "current_password",
             ""
@@ -2770,6 +3936,7 @@ def change_password():
         conn = get_db()
 
         try:
+
             user = conn.execute("""
                 SELECT *
                 FROM users
@@ -2856,6 +4023,7 @@ def change_password():
 
 @app.route("/admin")
 def admin_dashboard():
+
     if not admin_required():
         return redirect(
             url_for("login")
@@ -2864,6 +4032,7 @@ def admin_dashboard():
     conn = get_db()
 
     try:
+
         total_users = conn.execute("""
             SELECT COUNT(*) AS value
             FROM users
@@ -2971,6 +4140,7 @@ def admin_dashboard():
 
 @app.route("/admin/users")
 def admin_users():
+
     if not admin_required():
         return redirect(
             url_for("login")
@@ -2984,7 +4154,9 @@ def admin_users():
     conn = get_db()
 
     try:
+
         if search:
+
             users = conn.execute("""
                 SELECT *
                 FROM users
@@ -2996,6 +4168,7 @@ def admin_users():
             )).fetchall()
 
         else:
+
             users = conn.execute("""
                 SELECT *
                 FROM users
@@ -3021,7 +4194,10 @@ def admin_users():
     "/admin/users/<int:user_id>/status",
     methods=["POST"]
 )
-def admin_update_user_status(user_id):
+def admin_update_user_status(
+    user_id
+):
+
     if not admin_required():
         return redirect(
             url_for("login")
@@ -3048,6 +4224,7 @@ def admin_update_user_status(user_id):
     conn = get_db()
 
     try:
+
         user = conn.execute("""
             SELECT
                 id,
@@ -3061,6 +4238,7 @@ def admin_update_user_status(user_id):
         )).fetchone()
 
         if not user:
+
             flash(
                 "User account not found.",
                 "error"
@@ -3071,6 +4249,7 @@ def admin_update_user_status(user_id):
             )
 
         if user["role"] == "admin":
+
             flash(
                 "Admin accounts cannot be changed from "
                 "the user management page.",
@@ -3092,22 +4271,29 @@ def admin_update_user_status(user_id):
         ))
 
         if new_status == "Active":
+
             create_notification(
                 conn,
                 user_id,
                 "Account Activated",
-                "Your Rudbit account has been activated. "
-                "You can now use your account normally.",
+                (
+                    "Your Rudbit account has been activated. "
+                    "You can now use your account normally."
+                ),
                 "success"
             )
+
         else:
+
             create_notification(
                 conn,
                 user_id,
                 "Account Status Updated",
-                "Your Rudbit account has been temporarily "
-                "deactivated. Please contact the administrator "
-                "if you need assistance.",
+                (
+                    "Your Rudbit account has been temporarily "
+                    "deactivated. Please contact the administrator "
+                    "if you need assistance."
+                ),
                 "warning"
             )
 
@@ -3121,11 +4307,14 @@ def admin_update_user_status(user_id):
         conn.close()
 
     if new_status == "Active":
+
         flash(
             "User account activated successfully.",
             "success"
         )
+
     else:
+
         flash(
             "User account deactivated successfully.",
             "success"
@@ -3144,6 +4333,7 @@ def admin_update_user_status(user_id):
     "/admin/users/<int:user_id>"
 )
 def admin_user_details(user_id):
+
     if not admin_required():
         return redirect(
             url_for("login")
@@ -3152,6 +4342,7 @@ def admin_user_details(user_id):
     conn = get_db()
 
     try:
+
         user = conn.execute("""
             SELECT *
             FROM users
@@ -3162,6 +4353,7 @@ def admin_user_details(user_id):
         )).fetchone()
 
         if not user:
+
             flash(
                 "User account not found.",
                 "error"
@@ -3179,6 +4371,7 @@ def admin_user_details(user_id):
                 amount,
                 created_at,
                 destination_phone,
+                network,
                 status,
                 reference_id
             FROM transactions
@@ -3196,6 +4389,11 @@ def admin_user_details(user_id):
             user_id,
         )).fetchone()["value"]
 
+        active_cycle = get_active_task_cycle(
+            conn,
+            user_id
+        )
+
     finally:
         conn.close()
 
@@ -3203,7 +4401,8 @@ def admin_user_details(user_id):
         "admin_user_details.html",
         user=user,
         transactions=transactions,
-        notification_count=notification_count
+        notification_count=notification_count,
+        task_cycle=active_cycle
     )
 
 
@@ -3213,6 +4412,7 @@ def admin_user_details(user_id):
 
 @app.route("/admin/transactions")
 def admin_transactions():
+
     if not admin_required():
         return redirect(
             url_for("login")
@@ -3226,11 +4426,13 @@ def admin_transactions():
     conn = get_db()
 
     try:
+
         if transaction_type in [
             "Save",
             "Withdraw",
             "Task Reward"
         ]:
+
             transactions = conn.execute("""
                 SELECT
                     transactions.*,
@@ -3245,6 +4447,7 @@ def admin_transactions():
             )).fetchall()
 
         else:
+
             transactions = conn.execute("""
                 SELECT
                     transactions.*,
@@ -3271,6 +4474,7 @@ def admin_transactions():
 
 @app.route("/admin/withdrawals")
 def admin_withdrawals():
+
     if not admin_required():
         return redirect(
             url_for("login")
@@ -3284,11 +4488,13 @@ def admin_withdrawals():
     conn = get_db()
 
     try:
+
         if status_filter in [
             "Pending",
             "Completed",
             "Rejected"
         ]:
+
             withdrawals = conn.execute("""
                 SELECT
                     transactions.*,
@@ -3304,6 +4510,7 @@ def admin_withdrawals():
             )).fetchall()
 
         else:
+
             withdrawals = conn.execute("""
                 SELECT
                     transactions.*,
@@ -3332,7 +4539,10 @@ def admin_withdrawals():
 @app.route(
     "/admin/withdrawals/<int:transaction_id>"
 )
-def admin_withdrawal_details(transaction_id):
+def admin_withdrawal_details(
+    transaction_id
+):
+
     if not admin_required():
         return redirect(
             url_for("login")
@@ -3341,6 +4551,7 @@ def admin_withdrawal_details(transaction_id):
     conn = get_db()
 
     try:
+
         withdrawal = conn.execute("""
             SELECT
                 t.id,
@@ -3348,6 +4559,7 @@ def admin_withdrawal_details(transaction_id):
                 t.transaction_type,
                 t.amount,
                 t.destination_phone,
+                t.network,
                 t.status,
                 t.reference_id,
                 t.created_at,
@@ -3367,6 +4579,7 @@ def admin_withdrawal_details(transaction_id):
         conn.close()
 
     if not withdrawal:
+
         flash(
             "Withdrawal not found.",
             "error"
@@ -3393,6 +4606,7 @@ def admin_withdrawal_details(transaction_id):
 def admin_update_withdrawal_status(
     transaction_id
 ):
+
     if not admin_required():
         return redirect(
             url_for("login")
@@ -3420,6 +4634,7 @@ def admin_update_withdrawal_status(
     conn = get_db()
 
     try:
+
         withdrawal = conn.execute("""
             SELECT *
             FROM transactions
@@ -3431,6 +4646,7 @@ def admin_update_withdrawal_status(
         )).fetchone()
 
         if not withdrawal:
+
             flash(
                 "Withdrawal not found.",
                 "error"
@@ -3449,6 +4665,7 @@ def admin_update_withdrawal_status(
             "Completed",
             "Rejected"
         ]:
+
             flash(
                 f"This withdrawal is already "
                 f"{current_status}.",
@@ -3460,6 +4677,7 @@ def admin_update_withdrawal_status(
             )
 
         if new_status == "Pending":
+
             conn.execute("""
                 UPDATE transactions
                 SET status = 'Pending'
@@ -3480,6 +4698,7 @@ def admin_update_withdrawal_status(
             )
 
         if new_status == "Completed":
+
             conn.execute("""
                 UPDATE transactions
                 SET status = 'Completed'
@@ -3512,6 +4731,7 @@ def admin_update_withdrawal_status(
             )
 
         if new_status == "Rejected":
+
             user_id = withdrawal["user_id"]
             amount = withdrawal["amount"]
 
@@ -3575,6 +4795,7 @@ def admin_update_withdrawal_status(
 
 @app.route("/admin/tasks")
 def admin_tasks():
+
     if not admin_required():
         return redirect(
             url_for("login")
@@ -3583,6 +4804,7 @@ def admin_tasks():
     conn = get_db()
 
     try:
+
         tasks = conn.execute("""
             SELECT
                 t.id,
@@ -3621,7 +4843,8 @@ def admin_tasks():
     return render_template(
         "admin_tasks.html",
         tasks=tasks,
-        pending_task_submissions=pending_task_submissions
+        pending_task_submissions=pending_task_submissions,
+        cycle_reward=TASK_CYCLE_REWARD
     )
 
 
@@ -3634,6 +4857,7 @@ def admin_tasks():
     methods=["POST"]
 )
 def admin_create_task():
+
     if not admin_required():
         return redirect(
             url_for("login")
@@ -3679,11 +4903,13 @@ def admin_create_task():
         "Draft"
     ).strip()
 
+
     # =================================================
     # VALIDATION
     # =================================================
 
     if not title:
+
         flash(
             "Task title is required.",
             "error"
@@ -3694,6 +4920,7 @@ def admin_create_task():
         )
 
     if not description:
+
         flash(
             "Task description is required.",
             "error"
@@ -3703,36 +4930,46 @@ def admin_create_task():
             url_for("admin_tasks")
         )
 
-    try:
-        reward = float(reward_text)
+    # -------------------------------------------------
+    # The task-cycle reward is fixed at 2,500 Frw.
+    #
+    # We still accept the old reward field so the
+    # existing Admin Task form does not break.
+    # -------------------------------------------------
 
-    except (ValueError, TypeError):
-        flash(
-            "Please enter a valid reward amount.",
-            "error"
-        )
+    if reward_text:
 
-        return redirect(
-            url_for("admin_tasks")
-        )
+        try:
+            float(reward_text)
 
-    if reward < 0:
-        flash(
-            "Reward cannot be negative.",
-            "error"
-        )
+        except (
+            ValueError,
+            TypeError
+        ):
+            flash(
+                "Please enter a valid reward amount.",
+                "error"
+            )
 
-        return redirect(
-            url_for("admin_tasks")
-        )
+            return redirect(
+                url_for("admin_tasks")
+            )
+
+    reward = TASK_CYCLE_REWARD
 
     max_users = None
 
     if max_users_text:
-        try:
-            max_users = int(max_users_text)
 
-        except (ValueError, TypeError):
+        try:
+            max_users = int(
+                max_users_text
+            )
+
+        except (
+            ValueError,
+            TypeError
+        ):
             flash(
                 "Maximum users must be a valid number.",
                 "error"
@@ -3743,6 +4980,7 @@ def admin_create_task():
             )
 
         if max_users < 1:
+
             flash(
                 "Maximum users must be at least 1.",
                 "error"
@@ -3755,12 +4993,16 @@ def admin_create_task():
     deadline = None
 
     if deadline_text:
+
         try:
             deadline = datetime.fromisoformat(
                 deadline_text
             )
 
-        except (ValueError, TypeError):
+        except (
+            ValueError,
+            TypeError
+        ):
             flash(
                 "Please enter a valid deadline.",
                 "error"
@@ -3775,6 +5017,7 @@ def admin_create_task():
         "image",
         "link"
     ]:
+
         flash(
             "Invalid proof type.",
             "error"
@@ -3788,6 +5031,7 @@ def admin_create_task():
         "Draft",
         "Published"
     ]:
+
         flash(
             "Invalid task status.",
             "error"
@@ -3797,6 +5041,7 @@ def admin_create_task():
             url_for("admin_tasks")
         )
 
+
     # =================================================
     # CREATE TASK
     # =================================================
@@ -3804,6 +5049,7 @@ def admin_create_task():
     conn = get_db()
 
     try:
+
         conn.execute("""
             INSERT INTO tasks
             (
@@ -3843,6 +5089,7 @@ def admin_create_task():
         conn.commit()
 
     except Exception:
+
         conn.rollback()
 
         flash(
@@ -3858,7 +5105,11 @@ def admin_create_task():
         conn.close()
 
     flash(
-        "Task created successfully.",
+        (
+            "Task created successfully. "
+            f"Task-cycle reward is "
+            f"{TASK_CYCLE_REWARD:,.0f} Frw."
+        ),
         "success"
     )
 
@@ -3873,6 +5124,7 @@ def admin_create_task():
 
 @app.route("/admin/task-submissions")
 def admin_task_submissions():
+
     if not admin_required():
         return redirect(
             url_for("login")
@@ -3900,12 +5152,15 @@ def admin_task_submissions():
     conn = get_db()
 
     try:
+
         if task_id:
+
             submissions = conn.execute("""
                 SELECT
                     ts.id,
                     ts.task_id,
                     ts.user_id,
+                    ts.cycle_day_id,
                     ts.proof,
                     ts.status,
                     ts.reviewed_by,
@@ -3930,11 +5185,13 @@ def admin_task_submissions():
             )).fetchall()
 
         else:
+
             submissions = conn.execute("""
                 SELECT
                     ts.id,
                     ts.task_id,
                     ts.user_id,
+                    ts.cycle_day_id,
                     ts.proof,
                     ts.status,
                     ts.reviewed_by,
@@ -3984,7 +5241,8 @@ def admin_task_submissions():
         task_id=task_id,
         pending_count=pending_count,
         approved_count=approved_count,
-        rejected_count=rejected_count
+        rejected_count=rejected_count,
+        cycle_reward=TASK_CYCLE_REWARD
     )
 
 
@@ -3995,7 +5253,10 @@ def admin_task_submissions():
 @app.route(
     "/admin/task-submissions/<int:submission_id>"
 )
-def admin_task_submission_details(submission_id):
+def admin_task_submission_details(
+    submission_id
+):
+
     if not admin_required():
         return redirect(
             url_for("login")
@@ -4004,11 +5265,13 @@ def admin_task_submission_details(submission_id):
     conn = get_db()
 
     try:
+
         submission = conn.execute("""
             SELECT
                 ts.id,
                 ts.task_id,
                 ts.user_id,
+                ts.cycle_day_id,
                 ts.proof,
                 ts.status,
                 ts.reviewed_by,
@@ -4039,6 +5302,7 @@ def admin_task_submission_details(submission_id):
         conn.close()
 
     if not submission:
+
         flash(
             "Task submission not found.",
             "error"
@@ -4050,7 +5314,8 @@ def admin_task_submission_details(submission_id):
 
     return render_template(
         "admin_task_submission_details.html",
-        submission=submission
+        submission=submission,
+        cycle_reward=TASK_CYCLE_REWARD
     )
 
 
@@ -4062,7 +5327,10 @@ def admin_task_submission_details(submission_id):
     "/admin/task-submissions/<int:submission_id>/review",
     methods=["POST"]
 )
-def admin_review_task_submission(submission_id):
+def admin_review_task_submission(
+    submission_id
+):
+
     if not admin_required():
         return redirect(
             url_for("login")
@@ -4082,6 +5350,7 @@ def admin_review_task_submission(submission_id):
         "Approved",
         "Rejected"
     ]:
+
         flash(
             "Invalid submission review action.",
             "error"
@@ -4098,6 +5367,7 @@ def admin_review_task_submission(submission_id):
         decision == "Rejected"
         and not rejection_reason
     ):
+
         flash(
             "Please provide a reason for rejecting "
             "the submission.",
@@ -4114,6 +5384,7 @@ def admin_review_task_submission(submission_id):
     conn = get_db()
 
     try:
+
         # =================================================
         # LOCK SUBMISSION
         # =================================================
@@ -4137,6 +5408,7 @@ def admin_review_task_submission(submission_id):
         )).fetchone()
 
         if not submission:
+
             flash(
                 "Task submission not found.",
                 "error"
@@ -4152,10 +5424,11 @@ def admin_review_task_submission(submission_id):
         )
 
         # =================================================
-        # PREVENT DOUBLE REVIEW / DOUBLE PAYMENT
+        # PREVENT DOUBLE REVIEW
         # =================================================
 
         if current_status != "Pending":
+
             flash(
                 f"This submission has already been "
                 f"{current_status.lower()}.",
@@ -4169,14 +5442,65 @@ def admin_review_task_submission(submission_id):
                 )
             )
 
+
         # =================================================
         # APPROVE
         # =================================================
 
         if decision == "Approved":
-            reward = float(
-                submission["task_reward"] or 0
-            )
+
+            # -------------------------------------------------
+            # Cycle task reward is always exactly 2,500 Frw.
+            # Legacy submissions continue using task.reward.
+            # -------------------------------------------------
+
+            if submission["cycle_day_id"]:
+
+                reward = TASK_CYCLE_REWARD
+
+                cycle_day = conn.execute("""
+                    SELECT *
+                    FROM task_cycle_days
+                    WHERE id = %s
+                    FOR UPDATE
+                """, (
+                    submission["cycle_day_id"],
+                )).fetchone()
+
+                if not cycle_day:
+                    raise RuntimeError(
+                        "The task-cycle day associated "
+                        "with this submission could not "
+                        "be found."
+                    )
+
+                # Prevent another payment for the same
+                # cycle day.
+
+                existing_reward = conn.execute("""
+                    SELECT id
+                    FROM transactions
+                    WHERE user_id = %s
+                    AND transaction_type = 'Task Reward'
+                    AND reference_id = %s
+                    LIMIT 1
+                """, (
+                    submission["user_id"],
+                    f"RUD-CYCLE-{submission['cycle_day_id']}"
+                )).fetchone()
+
+                if existing_reward:
+                    raise RuntimeError(
+                        "This task reward has already been paid."
+                    )
+
+            else:
+
+                reward = float(
+                    submission["task_reward"]
+                    or 0
+                )
+
 
             user_id = submission["user_id"]
 
@@ -4197,6 +5521,11 @@ def admin_review_task_submission(submission_id):
                     "could not be found."
                 )
 
+
+            # -------------------------------------------------
+            # ADD REWARD TO BALANCE
+            # -------------------------------------------------
+
             conn.execute("""
                 UPDATE users
                 SET balance = balance + %s
@@ -4206,9 +5535,25 @@ def admin_review_task_submission(submission_id):
                 user_id
             ))
 
-            reference_id = (
-                f"RUD-TASK-{submission_id:06d}"
-            )
+
+            # -------------------------------------------------
+            # TRANSACTION RECORD
+            # -------------------------------------------------
+
+            if submission["cycle_day_id"]:
+
+                reference_id = (
+                    f"RUD-CYCLE-"
+                    f"{submission['cycle_day_id']}"
+                )
+
+            else:
+
+                reference_id = (
+                    f"RUD-TASK-"
+                    f"{submission_id:06d}"
+                )
+
 
             conn.execute("""
                 INSERT INTO transactions
@@ -4228,6 +5573,11 @@ def admin_review_task_submission(submission_id):
                 reference_id
             ))
 
+
+            # -------------------------------------------------
+            # UPDATE SUBMISSION
+            # -------------------------------------------------
+
             conn.execute("""
                 UPDATE task_submissions
                 SET status = 'Approved',
@@ -4241,12 +5591,35 @@ def admin_review_task_submission(submission_id):
                 submission_id
             ))
 
+
+            # -------------------------------------------------
+            # UPDATE CYCLE DAY
+            # -------------------------------------------------
+
+            if submission["cycle_day_id"]:
+
+                conn.execute("""
+                    UPDATE task_cycle_days
+                    SET status = 'Approved',
+                        reward = %s
+                    WHERE id = %s
+                """, (
+                    TASK_CYCLE_REWARD,
+                    submission["cycle_day_id"]
+                ))
+
+
+            # -------------------------------------------------
+            # USER NOTIFICATION
+            # -------------------------------------------------
+
             create_notification(
                 conn,
                 user_id,
                 "Task Approved",
                 (
-                    f'Your task "{submission["task_title"]}" '
+                    f'Your task '
+                    f'"{submission["task_title"]}" '
                     f'was approved. '
                     f'{reward:,.0f} Frw has been added '
                     f'to your balance.'
@@ -4257,9 +5630,11 @@ def admin_review_task_submission(submission_id):
             conn.commit()
 
             flash(
-                f"Submission approved successfully. "
-                f"{reward:,.0f} Frw has been added to the "
-                f"user's balance.",
+                (
+                    "Submission approved successfully. "
+                    f"{reward:,.0f} Frw has been added "
+                    "to the user's balance."
+                ),
                 "success"
             )
 
@@ -4268,6 +5643,7 @@ def admin_review_task_submission(submission_id):
                     "admin_task_submissions"
                 )
             )
+
 
         # =================================================
         # REJECT
@@ -4286,6 +5662,18 @@ def admin_review_task_submission(submission_id):
             rejection_reason,
             submission_id
         ))
+
+
+        if submission["cycle_day_id"]:
+
+            conn.execute("""
+                UPDATE task_cycle_days
+                SET status = 'Rejected'
+                WHERE id = %s
+            """, (
+                submission["cycle_day_id"],
+            ))
+
 
         create_notification(
             conn,
@@ -4327,6 +5715,7 @@ def admin_review_task_submission(submission_id):
 
 @app.route("/logout")
 def logout():
+
     session.clear()
 
     return redirect(
@@ -4339,6 +5728,7 @@ def logout():
 # =====================================================
 
 if __name__ == "__main__":
+
     init_db()
 
     app.run(
@@ -4346,5 +5736,3 @@ if __name__ == "__main__":
         host="127.0.0.1",
         port=5000
     )
-
-

@@ -70,7 +70,7 @@
             display: inline-block;
             margin-bottom: 18px;
             text-decoration: none;
-            color: #4f46e5;
+            color: #0066ff;
             font-weight: 600;
         }
 
@@ -86,14 +86,25 @@
         .task-title {
             font-size: 24px;
             font-weight: 700;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .reward {
-            color: #15803d;
+            display: inline-block;
+            color: #047857;
+            background: #ecfdf5;
+            padding: 9px 12px;
+            border-radius: 10px;
             font-weight: 700;
             font-size: 18px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+        }
+
+        .reward-note {
+            color: #667085;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 18px;
         }
 
         .label {
@@ -126,9 +137,14 @@
             line-height: 1.5;
         }
 
+        input[type="file"] {
+            padding: 12px;
+            cursor: pointer;
+        }
+
         textarea:focus,
         input:focus {
-            border-color: #4f46e5;
+            border-color: #0066ff;
         }
 
         .submit-button {
@@ -136,7 +152,7 @@
             border: none;
             border-radius: 13px;
             padding: 15px;
-            background: #111827;
+            background: #0066ff;
             color: white;
             font-size: 16px;
             font-weight: 700;
@@ -145,7 +161,7 @@
         }
 
         .submit-button:hover {
-            opacity: 0.92;
+            background: #0052cc;
         }
 
         .info {
@@ -156,6 +172,21 @@
             line-height: 1.6;
             color: #475467;
             font-size: 14px;
+        }
+
+        .reward-info {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 13px;
+            padding: 15px;
+            margin-top: 15px;
+            line-height: 1.6;
+            color: #166534;
+            font-size: 14px;
+        }
+
+        .reward-info strong {
+            color: #14532d;
         }
 
         .flash {
@@ -199,7 +230,7 @@
         }
 
         .bottom-nav a.active {
-            color: #111827;
+            color: #003d99;
             font-weight: 700;
         }
 
@@ -233,8 +264,6 @@
 
 <body>
 
-    <!-- TOP BAR -->
-
     <header class="topbar">
 
         <div class="logo">
@@ -248,8 +277,6 @@
     </header>
 
 
-    <!-- MAIN -->
-
     <main class="container">
 
         <a
@@ -259,8 +286,6 @@
             ← Back to Task
         </a>
 
-
-        <!-- FLASH MESSAGES -->
 
         {% with messages = get_flashed_messages(
             with_categories=true
@@ -281,8 +306,6 @@
         {% endwith %}
 
 
-        <!-- TASK INFORMATION -->
-
         <section class="card">
 
             <div class="task-title">
@@ -290,8 +313,13 @@
             </div>
 
             <div class="reward">
-                Reward:
-                {{ "{:,.0f}".format(task['reward'] or 0) }}
+                Reward: 2,500 Frw
+            </div>
+
+            <div class="reward-note">
+                Submit your proof after completing the task.
+                Your <strong>2,500 Frw</strong> reward will be added
+                to your balance only after Admin approves your submission.
             </div>
 
             <div class="info">
@@ -313,12 +341,11 @@
         </section>
 
 
-        <!-- SUBMISSION FORM -->
-
         <section class="card">
 
             <form
                 method="POST"
+                enctype="multipart/form-data"
                 action="{{ url_for(
                     'submit_task',
                     task_id=task['id']
@@ -359,14 +386,14 @@
 
                     <p class="help">
                         This task requires image proof.
-                        For now, paste the image link or describe
-                        the proof below.
+                        You can upload the screenshot below
+                        and also describe the proof here.
                     </p>
 
                     <textarea
                         id="proof"
                         name="proof"
-                        placeholder="Paste the image link or enter your proof here..."
+                        placeholder="Describe your proof or provide any useful details..."
                         required
                     ></textarea>
 
@@ -388,6 +415,59 @@
                 {% endif %}
 
 
+                <label
+                    class="label"
+                    for="proof_screenshot"
+                    style="margin-top: 20px;"
+                >
+                    Screenshot Proof
+                </label>
+
+
+                <p class="help">
+                    Upload a screenshot showing that you completed
+                    the task.
+
+                    <br>
+
+                    Allowed formats:
+                    <strong>JPG, PNG, WEBP</strong>.
+
+                    Maximum size:
+                    <strong>5 MB</strong>.
+                </p>
+
+
+                <input
+                    type="file"
+                    id="proof_screenshot"
+                    name="proof_screenshot"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    required
+                >
+
+
+                <div class="reward-info">
+
+                    <strong>Important:</strong><br>
+
+                    Submitting proof does not immediately add
+                    money to your balance.
+
+                    <br><br>
+
+                    Your text proof and screenshot will be reviewed
+                    by Admin.
+
+                    <br><br>
+
+                    After Admin reviews and approves your proof,
+                    <strong>2,500 Frw</strong> will be credited
+                    to your Rudbit balance.
+
+                </div>
+
+
                 <button
                     type="submit"
                     class="submit-button"
@@ -402,36 +482,53 @@
     </main>
 
 
-    <!-- BOTTOM NAVIGATION -->
-
     <nav class="bottom-nav">
 
         <a href="{{ url_for('dashboard') }}">
+
             <span class="nav-icon">⌂</span>
+
             Home
+
         </a>
+
 
         <a
             href="{{ url_for('tasks') }}"
             class="active"
         >
+
             <span class="nav-icon">✓</span>
+
             Tasks
+
         </a>
+
 
         <a href="{{ url_for('save') }}">
+
             <span class="nav-icon">＋</span>
+
             Save
+
         </a>
+
 
         <a href="{{ url_for('withdraw') }}">
+
             <span class="nav-icon">↗</span>
+
             Withdraw
+
         </a>
 
+
         <a href="{{ url_for('profile') }}">
+
             <span class="nav-icon">◯</span>
+
             Profile
+
         </a>
 
     </nav>

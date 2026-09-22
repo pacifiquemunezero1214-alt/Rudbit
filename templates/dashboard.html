@@ -21,7 +21,7 @@
             min-height: 100vh;
             background: #f4f7fb;
             color: #111827;
-            padding-bottom: 95px;
+            padding-bottom: 100px;
         }
 
         /* TOP BAR */
@@ -39,7 +39,7 @@
         .logo {
             font-size: 25px;
             font-weight: bold;
-            color: #2563eb;
+            color: #0066ff;
         }
 
         .topbar-right {
@@ -148,7 +148,7 @@
             width: 38px;
             height: 38px;
             border-radius: 50%;
-            background: #2563eb;
+            background: #0066ff;
             color: white;
             display: flex;
             align-items: center;
@@ -346,43 +346,174 @@
             font-size: 13px;
         }
 
-        /* BOTTOM NAVIGATION */
+        /* =====================================================
+           INDIVIDUAL BLUE BOTTOM NAVIGATION
+           ===================================================== */
 
         .bottom-nav {
             position: fixed;
+
             bottom: 0;
             left: 0;
+
             width: 100%;
-            min-height: 75px;
+
+            min-height: 82px;
+
             background: white;
-            border-top: 1px solid #e5e7eb;
+
             display: flex;
-            justify-content: space-around;
             align-items: center;
+            justify-content: center;
+
+            gap: 8px;
+
+            padding: 9px 10px;
+
             z-index: 1000;
-            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.08);
-            padding: 5px 0;
+
+            box-shadow:
+                0 -5px 22px rgba(0, 0, 0, 0.10);
         }
+
+        /* EACH BUTTON */
 
         .nav-item {
             flex: 1;
+
+            max-width: 115px;
+
+            height: 62px;
+
+            display: flex;
+            flex-direction: column;
+
+            align-items: center;
+            justify-content: center;
+
             text-align: center;
+
             text-decoration: none;
-            color: #2563eb;
+
+            background: #0066ff;
+
+            color: white;
+
             font-size: 10px;
             font-weight: bold;
-            min-width: 0;
+
+            border-radius: 14px;
+
+            transition:
+                background 0.2s ease,
+                transform 0.2s ease,
+                box-shadow 0.2s ease;
         }
+
+        /* ICON */
 
         .nav-icon {
-            display: block;
-            font-size: 21px;
-            margin-bottom: 4px;
-            color: #2563eb;
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            width: 30px;
+            height: 30px;
+
+            margin-bottom: 3px;
+
+            font-size: 20px;
+
+            color: white;
+
+            line-height: 1;
         }
 
+        /* HOVER */
+
+        .nav-item:hover {
+            background: #0052cc;
+            color: white;
+
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 5px 12px rgba(0, 102, 255, 0.25);
+        }
+
+        /* ACTIVE PAGE */
+
         .nav-item.active {
-            color: #2563eb;
+            background: #003d99;
+            color: white;
+
+            box-shadow:
+                inset 0 0 0 2px rgba(255, 255, 255, 0.40),
+                0 5px 15px rgba(0, 102, 255, 0.30);
+
+            transform: none;
+        }
+
+        .nav-item.active .nav-icon {
+            color: white;
+        }
+
+        /* SAVE IS EXACTLY SAME AS OTHER BUTTONS */
+
+        .nav-item.save-button {
+            width: auto;
+            max-width: 115px;
+
+            height: 62px;
+            min-height: 62px;
+
+            background: #0066ff;
+            color: white;
+
+            border-radius: 14px;
+
+            transform: none;
+            box-shadow: none;
+        }
+
+        .nav-item.save-button .nav-icon {
+            width: 30px;
+            height: 30px;
+
+            margin-bottom: 3px;
+
+            border-radius: 0;
+
+            background: transparent;
+
+            color: white;
+
+            font-size: 22px;
+        }
+
+        .nav-item.save-button:hover {
+            background: #0052cc;
+            color: white;
+
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 5px 12px rgba(0, 102, 255, 0.25);
+        }
+
+        /* ACTIVE SAVE */
+
+        .nav-item.save-button.active {
+            background: #003d99;
+
+            color: white;
+
+            transform: none;
+
+            box-shadow:
+                inset 0 0 0 2px rgba(255, 255, 255, 0.40),
+                0 5px 15px rgba(0, 102, 255, 0.30);
         }
 
         /* DESKTOP */
@@ -393,12 +524,30 @@
             .balance-card,
             .stats-grid,
             .activities-card {
+
                 max-width: 700px;
+
                 margin-left: auto;
                 margin-right: auto;
             }
 
+            .bottom-nav {
+
+                left: 50%;
+
+                transform: translateX(-50%);
+
+                max-width: 720px;
+
+                border-radius: 18px 18px 0 0;
+
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+
         }
+
+        /* SMALL PHONES */
 
         @media (max-width: 420px) {
 
@@ -415,10 +564,63 @@
             }
 
             .welcome-message {
+
                 top: 78px;
                 left: 12px;
+
                 font-size: 13px;
+
                 padding: 10px 14px;
+            }
+
+            .bottom-nav {
+
+                min-height: 76px;
+
+                gap: 5px;
+
+                padding-left: 5px;
+                padding-right: 5px;
+            }
+
+            .nav-item {
+
+                height: 57px;
+
+                min-height: 57px;
+
+                font-size: 8px;
+
+                border-radius: 11px;
+            }
+
+            .nav-icon {
+
+                width: 27px;
+                height: 27px;
+
+                font-size: 18px;
+            }
+
+            .nav-item.save-button {
+
+                width: auto;
+
+                max-width: 115px;
+
+                height: 57px;
+
+                min-height: 57px;
+
+                transform: none;
+            }
+
+            .nav-item.save-button .nav-icon {
+
+                width: 27px;
+                height: 27px;
+
+                font-size: 20px;
             }
 
         }
@@ -468,7 +670,6 @@
 
     </header>
 
-
     <!-- ANIMATED WELCOME MESSAGE -->
 
     <div class="welcome-message">
@@ -476,7 +677,6 @@
         Welcome, {{ user["username"] }}! 👋
 
     </div>
-
 
     <main>
 
@@ -499,7 +699,6 @@
 
         </section>
 
-
         <!-- BALANCE -->
 
         <section class="balance-card">
@@ -509,15 +708,18 @@
             </div>
 
             <div class="balance">
+
                 {{ "%.2f"|format(user["balance"] or 0) }}
+
             </div>
 
             <div class="status">
+
                 &#9679; Account {{ user["status"] }}
+
             </div>
 
         </section>
-
 
         <!-- QUICK STATS -->
 
@@ -530,15 +732,18 @@
                 </div>
 
                 <div class="stat-value">
+
                     {{ "%.2f"|format(total_saved or 0) }} Frw
+
                 </div>
 
                 <div class="stat-subtitle">
+
                     Total completed savings
+
                 </div>
 
             </div>
-
 
             <div class="stat-card">
 
@@ -547,15 +752,18 @@
                 </div>
 
                 <div class="stat-value">
+
                     {{ "%.2f"|format(total_earned or 0) }} Frw
+
                 </div>
 
                 <div class="stat-subtitle">
+
                     Task rewards earned
+
                 </div>
 
             </div>
-
 
             <div class="stat-card">
 
@@ -564,15 +772,18 @@
                 </div>
 
                 <div class="stat-value">
+
                     {{ "%.2f"|format(total_withdrawn or 0) }} Frw
+
                 </div>
 
                 <div class="stat-subtitle">
+
                     Completed withdrawals
+
                 </div>
 
             </div>
-
 
             <div class="stat-card">
 
@@ -581,17 +792,20 @@
                 </div>
 
                 <div class="stat-value">
+
                     {{ "%.2f"|format(pending_withdrawals or 0) }} Frw
+
                 </div>
 
                 <div class="stat-subtitle">
+
                     Pending withdrawals
+
                 </div>
 
             </div>
 
         </section>
-
 
         <!-- RECENT ACTIVITIES -->
 
@@ -600,7 +814,6 @@
             <div class="activities-title">
                 Recent Activities
             </div>
-
 
             {% if transactions %}
 
@@ -632,35 +845,40 @@
 
                             </div>
 
-
                             <div>
 
                                 <div class="activity-name">
+
                                     {{ transaction["transaction_type"] }}
+
                                 </div>
 
                                 <div class="activity-date">
+
                                     {{ transaction["created_at"] }}
+
                                 </div>
 
                             </div>
 
                         </div>
 
-
                         <div class="activity-amount">
+
                             {{ "%.2f"|format(transaction["amount"] or 0) }} Frw
+
                         </div>
 
                     </div>
 
                 {% endfor %}
 
-
             {% else %}
 
                 <div class="empty-activity">
+
                     No recent activities yet.
+
                 </div>
 
             {% endif %}
@@ -669,15 +887,15 @@
 
     </main>
 
-
-    <!-- BOTTOM NAVIGATION -->
+    <!-- INDIVIDUAL BLUE BOTTOM NAVIGATION -->
 
     <nav class="bottom-nav">
 
+        <!-- HOME -->
 
         <a
             href="{{ url_for('dashboard') }}"
-            class="nav-item active"
+            class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}"
         >
 
             <span class="nav-icon">
@@ -688,10 +906,11 @@
 
         </a>
 
+        <!-- TASKS -->
 
         <a
             href="{{ url_for('tasks') }}"
-            class="nav-item"
+            class="nav-item {% if request.endpoint == 'tasks' %}active{% endif %}"
         >
 
             <span class="nav-icon">
@@ -702,10 +921,11 @@
 
         </a>
 
+        <!-- SAVE -->
 
         <a
             href="{{ url_for('save') }}"
-            class="nav-item"
+            class="nav-item save-button {% if request.endpoint == 'save' %}active{% endif %}"
         >
 
             <span class="nav-icon">
@@ -716,10 +936,11 @@
 
         </a>
 
+        <!-- WITHDRAW -->
 
         <a
             href="{{ url_for('withdraw') }}"
-            class="nav-item"
+            class="nav-item {% if request.endpoint == 'withdraw' %}active{% endif %}"
         >
 
             <span class="nav-icon">
@@ -730,10 +951,11 @@
 
         </a>
 
+        <!-- PROFILE -->
 
         <a
             href="{{ url_for('profile') }}"
-            class="nav-item"
+            class="nav-item {% if request.endpoint == 'profile' %}active{% endif %}"
         >
 
             <span class="nav-icon">
@@ -744,10 +966,11 @@
 
         </a>
 
+        <!-- SETTINGS -->
 
         <a
             href="{{ url_for('settings') }}"
-            class="nav-item"
+            class="nav-item {% if request.endpoint == 'settings' %}active{% endif %}"
         >
 
             <span class="nav-icon">
@@ -758,9 +981,7 @@
 
         </a>
 
-
     </nav>
-
 
     <script>
 
@@ -769,41 +990,38 @@
             try {
 
                 const response = await fetch(
+
                     "{{ url_for('notification_api') }}",
+
                     {
                         method: "GET",
+
                         headers: {
                             "Accept": "application/json"
                         }
                     }
-                );
 
+                );
 
                 if (!response.ok) {
                     return;
                 }
 
-
                 const data = await response.json();
-
 
                 const badge = document.getElementById(
                     "notificationBadge"
                 );
 
-
                 if (!badge) {
                     return;
                 }
-
 
                 const count = Number(
                     data.unread_count || 0
                 );
 
-
                 badge.textContent = count;
-
 
                 if (count > 0) {
 
@@ -814,7 +1032,6 @@
                     badge.style.display = "none";
 
                 }
-
 
             } catch (error) {
 
@@ -827,9 +1044,7 @@
 
         }
 
-
         loadNotificationCount();
-
 
         setInterval(
             loadNotificationCount,
